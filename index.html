@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dashboard — Command Center</title>
+    <meta name="description" content="Smart Hospital Resource Allocation Dashboard — Real-time patient monitoring, bed utilization, and AI-driven resource management." />
+    <link rel="stylesheet" href="styles.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+</head>
+<body>
+    <!-- Main Content -->
+    <div class="main-content" id="main-content">
+        <!-- Canvas -->
+        <main class="canvas">
+            <!-- Alert Banner -->
+            <div class="alert-banner mb-md animate-fade-in" id="alert-icu">
+                <div class="alert-text">
+                    <span class="material-symbols-outlined" style="animation: pulse 1.5s infinite;">warning</span>
+                    <span class="h3 font-space" id="dashboard-alert-text" style="letter-spacing: -0.01em;">Admin login required to view live hospital alerts</span>
+                </div>
+                <button class="btn btn-error" id="dashboard-alert-btn" onclick="redirectToAdminLogin(window.location.href)">
+                    Open Login
+                </button>
+            </div>
+
+            <div class="glass-panel rounded-xl p-md mb-md animate-fade-in" id="dashboard-access-notice" style="display: none; border: 1px solid rgba(0,242,255,0.18);">
+                <div class="flex justify-between items-center" style="gap: 16px; flex-wrap: wrap;">
+                    <div>
+                        <span class="label-caps text-cyan">Restricted Mode</span>
+                        <h3 class="h3 text-white" style="margin-top: 10px;">Dashboard is visible, patient and hospital records stay locked until admin login.</h3>
+                    </div>
+                    <button class="btn btn-primary" type="button" onclick="redirectToAdminLogin(window.location.href)">
+                        Sign In
+                    </button>
+                </div>
+            </div>
+
+            <!-- Metrics Cards -->
+            <div class="grid-3 mb-md">
+                <!-- Total Patients -->
+                <div class="metric-card cyan animate-fade-in" style="animation-delay: 0.1s;">
+                    <div class="flex justify-between items-center mb-md">
+                        <span class="label-caps text-slate">Patient Records</span>
+                        <span class="metric-badge cyan">LOCKED</span>
+                    </div>
+                    <div class="metric-value">--</div>
+                    <div class="metric-sub mt-md">Visible after admin login</div>
+                </div>
+
+                <!-- ICU Beds -->
+                <div class="metric-card error animate-fade-in" style="animation-delay: 0.2s;">
+                    <div class="flex justify-between items-center mb-md">
+                        <span class="label-caps text-slate">Live Capacity</span>
+                        <span class="metric-badge error">LOCKED</span>
+                    </div>
+                    <div class="metric-value" style="color: var(--error);">
+                        <span class="glow-text">--</span>
+                    </div>
+                    <div class="metric-sub mt-md">Live bed counts require admin access</div>
+                </div>
+
+                <!-- Critical Patients -->
+                <div class="metric-card pink animate-fade-in" style="animation-delay: 0.3s;">
+                    <div class="flex justify-between items-center mb-md">
+                        <span class="label-caps text-slate">Clinical Alerts</span>
+                        <span class="metric-badge pink">LOCKED</span>
+                    </div>
+                    <div class="metric-value">--</div>
+                    <div class="metric-sub mt-md">Restricted until admin login</div>
+                </div>
+            </div>
+
+            <!-- Charts Row -->
+            <div class="grid-2">
+                <!-- Bar Chart -->
+                <div class="glass-panel rounded-xl p-md animate-fade-in" data-protected-panel style="animation-delay: 0.4s;">
+                    <div class="flex justify-between items-center mb-md">
+                        <h3 class="h3 text-white" id="dashboard-trends-title">Operational Trends</h3>
+                        <span class="material-symbols-outlined text-slate">more_horiz</span>
+                    </div>
+                    <div style="display: flex; align-items: flex-end; gap: 16px; height: 250px; padding: 0 16px 16px; border-bottom: 1px solid rgba(255,255,255,0.1); position: relative;">
+                        <!-- Y-Axis -->
+                        <div style="position: absolute; left: 0; top: 0; bottom: 0; display: flex; flex-direction: column; justify-content: space-between; font-size: 12px; color: #64748b; padding: 16px 0;">
+                            <span>100</span><span>50</span><span>0</span>
+                        </div>
+                        <!-- Bars -->
+                        <div style="flex: 1; display: flex; align-items: flex-end; justify-content: space-between; margin-left: 32px; height: 100%;">
+                            <div style="width: 32px; background: rgba(6,182,212,0.2); border-radius: 6px 6px 0 0; border-top: 2px solid #22d3ee; box-shadow: 0 -5px 15px rgba(0,242,255,0.2); height: 40%; transition: height 0.5s;"></div>
+                            <div style="width: 32px; background: rgba(6,182,212,0.2); border-radius: 6px 6px 0 0; border-top: 2px solid #22d3ee; box-shadow: 0 -5px 15px rgba(0,242,255,0.2); height: 60%;"></div>
+                            <div style="width: 32px; background: rgba(6,182,212,0.2); border-radius: 6px 6px 0 0; border-top: 2px solid #22d3ee; box-shadow: 0 -5px 15px rgba(0,242,255,0.2); height: 30%;"></div>
+                            <div style="width: 32px; background: rgba(6,182,212,0.2); border-radius: 6px 6px 0 0; border-top: 2px solid #22d3ee; box-shadow: 0 -5px 15px rgba(0,242,255,0.2); height: 80%;"></div>
+                            <div style="width: 32px; background: rgba(255,180,171,0.3); border-radius: 6px 6px 0 0; border-top: 2px solid var(--error); box-shadow: 0 -5px 15px rgba(255,180,171,0.3); height: 95%;"></div>
+                            <div style="width: 32px; background: rgba(6,182,212,0.2); border-radius: 6px 6px 0 0; border-top: 2px solid #22d3ee; box-shadow: 0 -5px 15px rgba(0,242,255,0.2); height: 50%;"></div>
+                        </div>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-left: 48px; margin-top: 8px; font-size: 12px; color: #64748b;" class="label-caps">
+                        <span>MON</span><span>TUE</span><span>WED</span><span>THU</span><span>FRI</span><span>SAT</span>
+                    </div>
+                </div>
+
+                <!-- Donut Chart -->
+                <div class="glass-panel rounded-xl p-md animate-fade-in" data-protected-panel style="animation-delay: 0.5s; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative;">
+                    <h3 class="h3 text-white" id="dashboard-capacity-title" style="position: absolute; top: 24px; left: 24px;">Capacity Overview</h3>
+                    <div style="position: relative; width: 220px; height: 220px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+                        background: conic-gradient(var(--error) 0% 15%, var(--tertiary-container) 15% 35%, var(--primary-container) 35% 100%);
+                        box-shadow: 0 0 30px rgba(0,242,255,0.1);">
+                        <div style="width: 160px; height: 160px; background: var(--surface-container-high); border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-direction: column; border: 1px solid rgba(255,255,255,0.05);">
+                            <span class="h2 text-white glow-text" id="dashboard-capacity-value">LOCKED</span>
+                            <span class="label-caps text-slate" id="dashboard-capacity-label" style="margin-top: 4px;">ADMIN ACCESS</span>
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 24px; margin-top: 24px; font-size: 14px; color: #94a3b8;" class="font-space">
+                        <div class="flex items-center gap-sm"><div style="width: 12px; height: 12px; border-radius: 50%; background: var(--primary-container); box-shadow: 0 0 8px var(--primary-container);"></div> General</div>
+                        <div class="flex items-center gap-sm"><div style="width: 12px; height: 12px; border-radius: 50%; background: var(--error); box-shadow: 0 0 8px var(--error);"></div> ICU</div>
+                        <div class="flex items-center gap-sm"><div style="width: 12px; height: 12px; border-radius: 50%; background: var(--tertiary-container); box-shadow: 0 0 8px var(--tertiary-container);"></div> Surgery</div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="shared.js"></script>
+    <script>
+        buildNavigation('dashboard');
+
+        function renderPublicDashboard() {
+            const accessNotice = document.getElementById('dashboard-access-notice');
+            if (accessNotice) {
+                accessNotice.style.display = 'block';
+            }
+
+            document.querySelectorAll('[data-protected-panel]').forEach((panel) => {
+                panel.style.position = 'relative';
+                panel.style.overflow = 'hidden';
+
+                if (panel.querySelector('.dashboard-lock-overlay')) {
+                    return;
+                }
+
+                const overlay = document.createElement('div');
+                overlay.className = 'dashboard-lock-overlay';
+                overlay.style.cssText = 'position:absolute;inset:0;background:rgba(10,15,25,0.72);backdrop-filter:blur(10px);display:flex;align-items:center;justify-content:center;padding:24px;text-align:center;border-radius:inherit;';
+                overlay.innerHTML = `
+                    <div>
+                        <span class="label-caps text-cyan">Protected Data</span>
+                        <h3 class="h3 text-white" style="margin-top:10px;">Sign in from the top-right account icon to unlock patient and hospital analytics.</h3>
+                    </div>
+                `;
+                panel.appendChild(overlay);
+            });
+        }
+
+        // Load live dashboard data
+        (async function() {
+            if (!hasAdminSession()) {
+                renderPublicDashboard();
+                return;
+            }
+
+            const data = await apiFetch('get_dashboard.php');
+            if (!data || !data.stats) return;
+            const s = data.stats;
+
+            const alertText = document.getElementById('dashboard-alert-text');
+            const alertBtn = document.getElementById('dashboard-alert-btn');
+            const accessNotice = document.getElementById('dashboard-access-notice');
+            if (alertText) {
+                alertText.textContent = `ICU ALMOST FULL: ${s.icu_capacity_pct}% CAPACITY REACHED`;
+            }
+            if (alertBtn) {
+                alertBtn.textContent = 'Initiate Protocol';
+                alertBtn.onclick = function() {
+                    document.getElementById('alert-icu').style.display = 'none';
+                };
+            }
+            if (accessNotice) {
+                accessNotice.style.display = 'none';
+            }
+            const trendsTitle = document.getElementById('dashboard-trends-title');
+            const capacityTitle = document.getElementById('dashboard-capacity-title');
+            const capacityValue = document.getElementById('dashboard-capacity-value');
+            const capacityLabel = document.getElementById('dashboard-capacity-label');
+            if (trendsTitle) {
+                trendsTitle.textContent = 'Patient Influx Trends';
+            }
+            if (capacityTitle) {
+                capacityTitle.textContent = 'Bed Utilization';
+            }
+            if (capacityValue) {
+                capacityValue.textContent = `${s.bed_utilization}%`;
+            }
+            if (capacityLabel) {
+                capacityLabel.textContent = 'TOTAL CAPACITY';
+            }
+
+            // Update metric cards
+            const cards = document.querySelectorAll('.metric-card');
+            if (cards[0]) {
+                cards[0].querySelector('.label-caps').textContent = 'Total Patients';
+                cards[0].querySelector('.metric-badge').textContent = '+12%';
+                cards[0].querySelector('.metric-value').textContent = formatNum(s.total_patients);
+                cards[0].querySelector('.metric-sub').textContent = 'Across all active wards';
+            }
+            if (cards[1]) {
+                cards[1].querySelector('.label-caps').textContent = 'ICU Beds Available';
+                cards[1].querySelector('.metric-value').innerHTML = `<span class="glow-text">${String(s.icu_available).padStart(2, '0')}</span>`;
+                cards[1].querySelector('.metric-sub').textContent = `Out of ${s.icu_total} total capacity`;
+                // Update badge
+                const badge = cards[1].querySelector('.metric-badge');
+                if (badge) badge.textContent = s.icu_available <= 5 ? 'CRITICAL' : 'OK';
+            }
+            if (cards[2]) {
+                cards[2].querySelector('.label-caps').textContent = 'Critical Patients';
+                cards[2].querySelector('.metric-badge').textContent = 'STABLE';
+                cards[2].querySelector('.metric-value').textContent = s.critical_count;
+                cards[2].querySelector('.metric-sub').textContent = 'Requiring immediate attention';
+            }
+        })();
+    </script>
+</body>
+</html>

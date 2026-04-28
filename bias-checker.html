@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Bias Checker — Command Center</title>
+    <link rel="stylesheet" href="styles.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+    <style>
+        .chart-container {
+            display: flex;
+            align-items: flex-end;
+            gap: 40px;
+            height: 250px;
+            padding: 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            position: relative;
+        }
+        .bar-wrap {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex: 1;
+            height: 100%;
+            justify-content: flex-end;
+        }
+        .bar {
+            width: 80px;
+            border-radius: 6px 6px 0 0;
+            transition: height 1s ease-out;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            box-shadow: 0 -5px 20px rgba(0,0,0,0.2);
+        }
+        .bar-male {
+            background: rgba(0, 242, 255, 0.2);
+            border-top: 2px solid var(--primary-container);
+            box-shadow: 0 -5px 15px rgba(0, 242, 255, 0.2);
+        }
+        .bar-female {
+            background: rgba(255, 172, 232, 0.2);
+            border-top: 2px solid var(--secondary);
+            box-shadow: 0 -5px 15px rgba(255, 172, 232, 0.2);
+        }
+        .bar-value {
+            position: absolute;
+            top: -30px;
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 20px;
+            font-weight: 700;
+            color: white;
+        }
+        .bar-label {
+            margin-top: 16px;
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            color: var(--on-surface-variant);
+        }
+    </style>
+</head>
+<body>
+    <div class="main-content" id="main-content">
+        <main class="canvas">
+            <!-- Header -->
+            <div class="flex justify-between items-center mb-lg animate-fade-in">
+                <div>
+                    <h1 class="h1" style="color: var(--primary-fixed); text-shadow: 0 0 12px rgba(116,245,255,0.3);">Ethical AI Fairness Analysis</h1>
+                    <p class="body-md text-muted" style="margin-top: 8px;">Detecting and monitoring potential demographic bias in automated resource allocation.</p>
+                </div>
+                <button class="btn btn-secondary" onclick="fetchBiasData()">
+                    <span class="material-symbols-outlined" id="refresh-icon">refresh</span>
+                    Refresh Analysis
+                </button>
+            </div>
+
+            <div class="grid-2">
+                <!-- Metrics and Chart -->
+                <div class="glass-panel rounded-xl p-lg animate-fade-in" style="animation-delay: 0.1s;">
+                    <div class="flex justify-between items-center mb-md">
+                        <h3 class="h3 flex items-center gap-sm">
+                            <span class="material-symbols-outlined text-cyan">bar_chart</span>
+                            ICU Allocation Rate by Gender
+                        </h3>
+                    </div>
+                    
+                    <div class="chart-container">
+                        <div class="bar-wrap">
+                            <div class="bar bar-male" id="bar-male" style="height: 0%;">
+                                <div class="bar-value" id="val-male">--</div>
+                            </div>
+                            <div class="bar-label">MALE</div>
+                        </div>
+                        <div class="bar-wrap">
+                            <div class="bar bar-female" id="bar-female" style="height: 0%;">
+                                <div class="bar-value" id="val-female">--</div>
+                            </div>
+                            <div class="bar-label">FEMALE</div>
+                        </div>
+                    </div>
+                    
+                    <div class="flex justify-between mt-md pt-md" style="border-top:1px solid rgba(255,255,255,0.05);">
+                        <div>
+                            <div class="label-caps text-slate mb-sm">Delta (Bias Score)</div>
+                            <div class="h2" id="val-score" style="color:white;">--</div>
+                        </div>
+                        <div style="text-align:right;">
+                            <div class="label-caps text-slate mb-sm">System Status</div>
+                            <div class="status-pill" id="system-status" style="font-size:14px; padding:6px 16px;">
+                                <span class="dot"></span>
+                                <span id="status-text">READY</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- AI Explanation -->
+                <div class="glass-panel rounded-xl p-lg animate-fade-in" style="animation-delay: 0.2s; display:flex; flex-direction:column;">
+                    <h3 class="h3 flex items-center gap-sm mb-lg">
+                        <span class="material-symbols-outlined text-pink">psychology</span>
+                        Gemini AI Ethical Assessment
+                    </h3>
+                    
+                    <div id="ai-loading" class="flex items-center gap-sm" style="display:none; color:var(--on-surface-variant); margin-top:40px; justify-content:center;">
+                        <span class="material-symbols-outlined" style="animation: spin 1s linear infinite;">sync</span>
+                        Querying Google Gemini API...
+                    </div>
+                    
+                    <div id="ai-explanation" class="body-lg" style="display:block; color:var(--on-surface); line-height:1.7; background:rgba(19,19,21,0.5); padding:24px; border-radius:var(--radius-md); border:1px solid rgba(255,255,255,0.05); flex:1;">
+                        Bias analysis will appear here after the first request.
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="shared.js"></script>
+    <script>
+        if (!enforceAdminAccess()) throw new Error('Admin login required');
+        buildNavigation('bias-checker');
+
+        function escapeBiasHtml(value) {
+            return String(value ?? '').replace(/[&<>"']/g, function(char) {
+                return {
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    '"': '&quot;',
+                    "'": '&#39;'
+                }[char];
+            });
+        }
+
+        function setBiasStatus(type, text) {
+            const pill = document.getElementById('system-status');
+            const statusText = document.getElementById('status-text');
+
+            pill.className = 'status-pill';
+            if (type) {
+                pill.classList.add(type);
+            }
+            statusText.textContent = text;
+        }
+
+        function resetBiasMetrics() {
+            document.getElementById('bar-male').style.height = '0%';
+            document.getElementById('bar-female').style.height = '0%';
+            document.getElementById('val-male').textContent = '--';
+            document.getElementById('val-female').textContent = '--';
+            document.getElementById('val-score').textContent = '--';
+        }
+
+        function setBiasMetrics(male, female, biasScore) {
+            const safeMale = Number.isFinite(Number(male)) ? Number(male) : null;
+            const safeFemale = Number.isFinite(Number(female)) ? Number(female) : null;
+            const safeBiasScore = Number.isFinite(Number(biasScore)) ? Number(biasScore) : null;
+
+            if (safeMale === null || safeFemale === null || safeBiasScore === null) {
+                resetBiasMetrics();
+                return;
+            }
+
+            document.getElementById('bar-male').style.height = safeMale + '%';
+            document.getElementById('bar-female').style.height = safeFemale + '%';
+            document.getElementById('val-male').textContent = safeMale.toFixed(2).replace(/\.00$/, '') + '%';
+            document.getElementById('val-female').textContent = safeFemale.toFixed(2).replace(/\.00$/, '') + '%';
+            document.getElementById('val-score').textContent = safeBiasScore.toFixed(2).replace(/\.00$/, '') + ' pts';
+        }
+
+        function renderBiasAssessment(data) {
+            const explanation = document.getElementById('ai-explanation');
+            explanation.style.display = 'block';
+            explanation.innerHTML = `
+                <div class="label-caps text-slate mb-sm">Analysis</div>
+                <div class="body-md" style="color:var(--on-surface); margin-bottom:20px; line-height:1.7;">
+                    ${escapeBiasHtml(data.analysis)}
+                </div>
+                <div class="label-caps text-slate mb-sm">Suggestion</div>
+                <div class="body-md" style="color:var(--on-surface-variant); line-height:1.7;">
+                    ${escapeBiasHtml(data.suggestion)}
+                </div>
+            `;
+        }
+
+        function renderBiasMessage(message, statusType, statusText) {
+            document.getElementById('ai-loading').style.display = 'none';
+            setBiasStatus(statusType, statusText);
+
+            const explanation = document.getElementById('ai-explanation');
+            explanation.style.display = 'block';
+            explanation.innerHTML = `
+                <div style="color:${statusType === 'critical' ? 'var(--error)' : 'var(--on-surface-variant)'}; line-height:1.7;">
+                    ${escapeBiasHtml(message)}
+                </div>
+            `;
+        }
+
+        async function requestBiasAnalysis(payload) {
+            console.log('Bias request payload:', payload);
+
+            const data = await apiFetch('bias_check.php', {
+                method: 'POST',
+                body: JSON.stringify(payload)
+            });
+
+            console.log('Bias response:', data);
+
+            if (!data || data.status !== 'success') {
+                throw new Error(data?.message || 'Bias API request failed.');
+            }
+
+            return data;
+        }
+
+        async function fetchBiasData() {
+            const refreshIcon = document.getElementById('refresh-icon');
+            refreshIcon.style.animation = 'spin 1s linear infinite';
+
+            document.getElementById('ai-loading').style.display = 'flex';
+            document.getElementById('ai-explanation').style.display = 'none';
+            setBiasStatus('', 'ANALYZING...');
+
+            const payload = {
+                analysis_type: 'icu_allocation_bias',
+                resource_type: 'icu_bed',
+                group_by: 'gender'
+            };
+
+            try {
+                const data = await requestBiasAnalysis(payload);
+
+                if (data.has_data === false) {
+                    resetBiasMetrics();
+                    renderBiasMessage(data.message || 'No data available.', '', 'NO DATA');
+                    return;
+                }
+
+                setBiasMetrics(data.male, data.female, data.bias_score);
+                document.getElementById('ai-loading').style.display = 'none';
+
+                // Determine status based on sample size and bias flag
+                const totalAlloc = data.total_allocations || 0;
+                const minSample = data.min_sample_required || 6;
+                let statusType, statusText;
+
+                if (totalAlloc < minSample) {
+                    statusType = 'stable';
+                    statusText = 'LOW SAMPLE (' + totalAlloc + '/' + minSample + ')';
+                } else if (data.is_biased) {
+                    statusType = 'critical';
+                    statusText = 'BIAS DETECTED';
+                } else {
+                    statusType = 'stable';
+                    statusText = 'FAIR SYSTEM';
+                }
+
+                setBiasStatus(statusType, statusText);
+                renderBiasAssessment(data);
+            } catch (error) {
+                console.error('fetchBiasData failed:', error);
+                resetBiasMetrics();
+                renderBiasMessage(error.message || 'Failed to analyze bias.', 'critical', 'ERROR');
+                showToast(error.message || 'Failed to analyze bias', 'error');
+            } finally {
+                refreshIcon.style.animation = '';
+            }
+        }
+
+        // Fetch on load
+        fetchBiasData();
+    </script>
+</body>
+</html>

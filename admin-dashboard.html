@@ -1,0 +1,1200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin Panel - Smart Hospital Operations</title>
+    <meta name="description" content="Manual hospital administration for doctor registration, bed capacity control, and resource coordination." />
+    <link rel="stylesheet" href="styles.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+    <style>
+        .page-stack {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-lg);
+            position: relative;
+        }
+
+        .hero-grid,
+        .admin-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: var(--space-md);
+        }
+
+        .hero-card,
+        .form-card,
+        .resource-shell {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: var(--radius-xl);
+            padding: var(--space-md);
+            backdrop-filter: blur(24px);
+        }
+
+        .hero-card {
+            min-height: 100%;
+        }
+
+        .hero-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 14px;
+            border-radius: var(--radius-full);
+            background: rgba(0, 242, 255, 0.08);
+            border: 1px solid rgba(0, 242, 255, 0.18);
+            color: var(--primary-container);
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        .hero-status.is-empty {
+            background: rgba(255, 180, 171, 0.1);
+            border-color: rgba(255, 180, 171, 0.18);
+            color: var(--error);
+        }
+
+        .profile-grid,
+        .metrics-grid,
+        .capacity-grid {
+            display: grid;
+            gap: var(--space-md);
+        }
+
+        .profile-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            margin-top: var(--space-md);
+        }
+
+        .profile-item {
+            padding: 16px;
+            border-radius: var(--radius-lg);
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .profile-item strong {
+            display: block;
+            margin-top: 6px;
+            color: var(--on-surface);
+            font-size: 16px;
+        }
+
+        .metrics-grid {
+            grid-template-columns: repeat(6, minmax(0, 1fr));
+        }
+
+        .metric-shell {
+            padding: 18px;
+            border-radius: var(--radius-lg);
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .metric-shell .material-symbols-outlined {
+            color: var(--primary-container);
+            font-size: 24px;
+        }
+
+        .metric-shell strong {
+            font-size: 28px;
+            color: var(--on-surface);
+            line-height: 1;
+        }
+
+        .metric-shell span:last-child {
+            color: var(--on-surface-variant);
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        .inline-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 16px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .form-label {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--on-surface-variant);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        .form-input,
+        .form-select {
+            width: 100%;
+            padding: 12px 14px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(255, 255, 255, 0.04);
+            color: var(--on-surface);
+            font-size: 14px;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+        }
+
+        .form-input:focus,
+        .form-select:focus {
+            outline: none;
+            border-color: rgba(0, 242, 255, 0.4);
+            box-shadow: 0 0 0 3px rgba(0, 242, 255, 0.12);
+            background: rgba(0, 242, 255, 0.05);
+        }
+
+        .form-select option {
+            background: var(--surface-container);
+        }
+
+        .form-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-top: 8px;
+        }
+
+        .capacity-grid {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+
+        .capacity-card {
+            padding: 20px;
+            border-radius: var(--radius-lg);
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .capacity-card header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .capacity-card header .material-symbols-outlined {
+            color: var(--primary-container);
+            font-size: 24px;
+        }
+
+        .capacity-summary {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 10px;
+        }
+
+        .capacity-summary div {
+            padding: 10px 12px;
+            border-radius: var(--radius-md);
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .capacity-summary span {
+            display: block;
+            color: var(--on-surface-variant);
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        .capacity-summary strong {
+            display: block;
+            margin-top: 4px;
+            font-size: 20px;
+            color: var(--on-surface);
+        }
+
+        .capacity-stepper {
+            display: grid;
+            grid-template-columns: 48px minmax(0, 1fr) 48px;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .capacity-adjust {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            border: 1px solid rgba(0, 242, 255, 0.16);
+            background: rgba(0, 242, 255, 0.06);
+            color: var(--primary-container);
+            font-size: 22px;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .capacity-adjust:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 0 18px rgba(0, 242, 255, 0.15);
+        }
+
+        .capacity-input {
+            width: 100%;
+            height: 48px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(255, 255, 255, 0.04);
+            color: var(--on-surface);
+            text-align: center;
+            font-size: 20px;
+            font-weight: 700;
+        }
+
+        .capacity-hint {
+            color: var(--on-surface-variant);
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        .panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            margin-bottom: var(--space-md);
+        }
+
+        .resource-table {
+            width: 100%;
+            border-collapse: collapse;
+            border-spacing: 0;
+            font-size: 14px;
+        }
+
+        .resource-table th {
+            padding: 14px 12px;
+            text-align: left;
+            color: var(--primary-container);
+            background: rgba(0, 242, 255, 0.08);
+            border-bottom: 1px solid rgba(0, 242, 255, 0.15);
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        .resource-table td {
+            padding: 14px 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            vertical-align: middle;
+        }
+
+        .resource-table tr:hover {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .resource-code {
+            color: var(--primary-container);
+            font-weight: 700;
+            font-family: 'Space Grotesk', sans-serif;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 10px;
+            border-radius: 999px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        .status-badge.available {
+            background: rgba(76, 175, 80, 0.16);
+            border: 1px solid rgba(76, 175, 80, 0.22);
+            color: #6dd96f;
+        }
+
+        .status-badge.occupied {
+            background: rgba(255, 180, 171, 0.12);
+            border: 1px solid rgba(255, 180, 171, 0.2);
+            color: var(--error);
+        }
+
+        .status-badge.maintenance {
+            background: rgba(255, 214, 102, 0.12);
+            border: 1px solid rgba(255, 214, 102, 0.2);
+            color: #ffd666;
+        }
+
+        .action-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .btn-small,
+        .status-select {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            min-height: 38px;
+            padding: 0 12px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--on-surface);
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            cursor: pointer;
+        }
+
+        .btn-small.warning {
+            border-color: rgba(255, 214, 102, 0.3);
+            color: #ffd666;
+        }
+
+        .btn-small.danger {
+            border-color: rgba(255, 180, 171, 0.25);
+            color: var(--error);
+        }
+
+        .status-select {
+            min-width: 120px;
+            appearance: none;
+        }
+
+        .empty-state {
+            padding: 60px 24px;
+            text-align: center;
+            color: var(--on-surface-variant);
+            border: 1px dashed rgba(255, 255, 255, 0.12);
+            border-radius: var(--radius-lg);
+        }
+
+        @media (max-width: 1260px) {
+            .metrics-grid {
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+            }
+
+            .capacity-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+
+        @media (max-width: 980px) {
+            .hero-grid,
+            .admin-grid,
+            .inline-grid,
+            .profile-grid,
+            .capacity-grid,
+            .metrics-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .capacity-summary {
+                grid-template-columns: 1fr 1fr 1fr;
+            }
+        }
+
+        @media (max-width: 760px) {
+            .resource-shell {
+                overflow-x: auto;
+            }
+
+            .resource-table {
+                min-width: 860px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="main-content" id="main-content">
+        <main class="canvas page-stack">
+            <div class="ambient-glow" style="top: -18%; left: 54%; width: 760px; height: 760px; background: rgba(0, 242, 255, 0.05); transform: translateX(-50%);"></div>
+
+            <section class="animate-fade-in">
+                <div class="panel-header" style="margin-bottom: 16px;">
+                    <div>
+                        <h1 class="h1">Hospital Admin Panel</h1>
+                        <p class="body-lg text-muted" style="margin-top: 8px; max-width: 760px;">Manual control for hospital registration, live capacity planning, and resource updates across the full website.</p>
+                    </div>
+                </div>
+
+                <div class="hero-grid">
+                    <article class="hero-card animate-fade-in" style="animation-delay: 0.1s;">
+                        <span class="label-caps text-cyan">Registered Hospital</span>
+                        <h2 id="hospital-display-name" class="h2" style="margin-top: 12px;">COMMAND CENTER</h2>
+                        <p id="hospital-summary" class="body-md text-muted" style="margin-top: 10px;">Complete the doctor registration form to replace the default brand and activate hospital-wide manual control.</p>
+
+                        <div class="profile-grid">
+                            <div class="profile-item">
+                                <span class="label-caps text-slate">Lead Doctor</span>
+                                <strong id="profile-doctor">Not registered</strong>
+                            </div>
+                            <div class="profile-item">
+                                <span class="label-caps text-slate">Hospital City</span>
+                                <strong id="profile-city">Pending setup</strong>
+                            </div>
+                            <div class="profile-item">
+                                <span class="label-caps text-slate">Registered Bed Goal</span>
+                                <strong id="profile-beds">-</strong>
+                            </div>
+                            <div class="profile-item">
+                                <span class="label-caps text-slate">Emergency Contact</span>
+                                <strong id="profile-contact">-</strong>
+                            </div>
+                        </div>
+                    </article>
+
+                    <section class="form-card animate-fade-in" style="animation-delay: 0.15s;">
+                        <div class="panel-header" style="margin-bottom: 18px;">
+                            <div>
+                                <span class="label-caps text-cyan">Doctor Access</span>
+                                <h3 class="h3" style="margin-top: 10px;">Register Hospital For Admin Login</h3>
+                            </div>
+                            <span class="label-caps text-muted">Updates the shared brand</span>
+                        </div>
+
+                        <form id="hospital-registration-form" style="display: flex; flex-direction: column; gap: 16px;">
+                            <div class="inline-grid">
+                                <div class="form-group">
+                                    <label class="form-label" for="doctor-name">Doctor Name</label>
+                                    <input class="form-input" id="doctor-name" name="doctor_name" type="text" placeholder="Dr. Asha Patel" required />
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label" for="doctor-role">Role</label>
+                                    <input class="form-input" id="doctor-role" name="doctor_role" type="text" placeholder="Chief Medical Officer" required />
+                                </div>
+                            </div>
+
+                            <div class="inline-grid">
+                                <div class="form-group">
+                                    <label class="form-label" for="doctor-email">Doctor Email</label>
+                                    <input class="form-input" id="doctor-email" name="doctor_email" type="email" placeholder="doctor@hospital.org" required />
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label" for="hospital-name">Hospital Name</label>
+                                    <input class="form-input" id="hospital-name" name="hospital_name" type="text" placeholder="Sunrise Heart Institute" required />
+                                </div>
+                            </div>
+
+                            <div class="inline-grid">
+                                <div class="form-group">
+                                    <label class="form-label" for="hospital-city">Hospital City</label>
+                                    <input class="form-input" id="hospital-city" name="hospital_city" type="text" placeholder="Mumbai" required />
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label" for="total-beds">Registered Bed Goal</label>
+                                    <input class="form-input" id="total-beds" name="total_beds" type="number" min="0" placeholder="120" required />
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label" for="emergency-contact">Emergency Contact</label>
+                                <input class="form-input" id="emergency-contact" name="emergency_contact" type="text" placeholder="+91 98XXXXXX12" required />
+                            </div>
+
+                            <div class="form-actions">
+                                <button type="submit" class="btn btn-primary">
+                                    <span class="material-symbols-outlined">verified_user</span>
+                                    Save Admin Login
+                                </button>
+                                <button type="button" id="clear-profile-btn" class="btn btn-secondary">
+                                    <span class="material-symbols-outlined">refresh</span>
+                                    Reset Profile
+                                </button>
+                            </div>
+                        </form>
+                    </section>
+                </div>
+            </section>
+
+            <section class="animate-fade-in" style="animation-delay: 0.2s;">
+                <div class="panel-header">
+                    <div>
+                        <span class="label-caps text-cyan">Live Inventory</span>
+                        <h2 class="h2" style="margin-top: 10px;">Hospital Resource Snapshot</h2>
+                    </div>
+                    <button id="reload-resources-btn" class="btn btn-secondary">
+                        <span class="material-symbols-outlined">refresh</span>
+                        Refresh Resources
+                    </button>
+                </div>
+
+                <div class="metrics-grid">
+                    <div class="metric-shell">
+                        <span class="material-symbols-outlined">inventory_2</span>
+                        <strong id="stat-total">0</strong>
+                        <span>Total resources</span>
+                    </div>
+                    <div class="metric-shell">
+                        <span class="material-symbols-outlined">bed</span>
+                        <strong id="stat-icu">0</strong>
+                        <span>ICU beds</span>
+                    </div>
+                    <div class="metric-shell">
+                        <span class="material-symbols-outlined">hotel</span>
+                        <strong id="stat-general">0</strong>
+                        <span>General beds</span>
+                    </div>
+                    <div class="metric-shell">
+                        <span class="material-symbols-outlined">check_circle</span>
+                        <strong id="stat-available">0</strong>
+                        <span>Available now</span>
+                    </div>
+                    <div class="metric-shell">
+                        <span class="material-symbols-outlined">priority_high</span>
+                        <strong id="stat-occupied">0</strong>
+                        <span>Occupied now</span>
+                    </div>
+                    <div class="metric-shell">
+                        <span class="material-symbols-outlined">build</span>
+                        <strong id="stat-maintenance">0</strong>
+                        <span>Maintenance</span>
+                    </div>
+                </div>
+            </section>
+
+            <section class="form-card animate-fade-in" style="animation-delay: 0.24s;">
+                <div class="panel-header">
+                    <div>
+                        <span class="label-caps text-cyan">Manual Capacity Control</span>
+                        <h2 class="h2" style="margin-top: 10px;">Update Beds And Core Resources</h2>
+                        <p class="body-md text-muted" style="margin-top: 8px; max-width: 760px;">Set the target count for each resource type, then apply the inventory update. Reductions are limited by currently occupied units.</p>
+                    </div>
+                    <button id="apply-capacity-btn" class="btn btn-primary">
+                        <span class="material-symbols-outlined">publish</span>
+                        Apply Inventory Update
+                    </button>
+                </div>
+                <div id="capacity-grid" class="capacity-grid"></div>
+            </section>
+
+            <div class="admin-grid">
+                <section class="form-card animate-fade-in" style="animation-delay: 0.28s;">
+                    <span class="label-caps text-cyan">Manual Add</span>
+                    <h3 class="h3" style="margin-top: 10px; margin-bottom: 18px;">Create Single Resource</h3>
+                    <form id="add-resource-form" style="display: flex; flex-direction: column; gap: 16px;">
+                        <div class="form-group">
+                            <label class="form-label" for="resource-code">Resource Code</label>
+                            <input class="form-input" id="resource-code" type="text" placeholder="ICU-14" required />
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="resource-name">Resource Name</label>
+                            <input class="form-input" id="resource-name" type="text" placeholder="ICU Bed 14" required />
+                        </div>
+                        <div class="inline-grid">
+                            <div class="form-group">
+                                <label class="form-label" for="resource-type">Resource Type</label>
+                                <select class="form-select" id="resource-type" required>
+                                    <option value="">Select type</option>
+                                    <option value="icu_bed">ICU Bed</option>
+                                    <option value="general_bed">General Bed</option>
+                                    <option value="or_room">Operating Room</option>
+                                    <option value="ventilator">Ventilator</option>
+                                    <option value="monitor">Monitor</option>
+                                    <option value="wheelchair">Wheelchair</option>
+                                    <option value="discharge_lounge">Discharge Lounge</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="resource-ward">Ward Or Location</label>
+                                <input class="form-input" id="resource-ward" type="text" placeholder="Critical Care Unit" required />
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <span class="material-symbols-outlined">add</span>
+                            Add Resource
+                        </button>
+                    </form>
+                </section>
+
+                <section class="form-card animate-fade-in" style="animation-delay: 0.32s;">
+                    <span class="label-caps text-cyan">Manual Assignment</span>
+                    <h3 class="h3" style="margin-top: 10px; margin-bottom: 18px;">Assign Resource To Patient</h3>
+                    <form id="assign-resource-form" style="display: flex; flex-direction: column; gap: 16px;">
+                        <div class="form-group">
+                            <label class="form-label" for="assign-resource-select">Select Resource</label>
+                            <select class="form-select" id="assign-resource-select" required>
+                                <option value="">Loading resources...</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="assign-patient-select">Select Patient</label>
+                            <select class="form-select" id="assign-patient-select" required>
+                                <option value="">Loading patients...</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <span class="material-symbols-outlined">assignment_turned_in</span>
+                            Assign Resource
+                        </button>
+                    </form>
+                </section>
+            </div>
+
+            <section class="resource-shell animate-fade-in" style="animation-delay: 0.36s;">
+                <div class="panel-header">
+                    <div>
+                        <span class="label-caps text-cyan">Operational Table</span>
+                        <h2 class="h2" style="margin-top: 10px;">All Registered Resources</h2>
+                    </div>
+                </div>
+                <div id="resources-container">
+                    <div class="empty-state">
+                        <span class="material-symbols-outlined" style="font-size: 32px; display: block; margin-bottom: 10px;">sync</span>
+                        Loading resource controls...
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="shared.js"></script>
+    <script>
+        if (!enforceAdminAccess()) throw new Error('Admin login required');
+        const RESOURCE_TYPE_CONFIG = {
+            icu_bed: { label: 'ICU Beds', icon: 'bed', prefix: 'ICU', baseName: 'ICU Bed', ward: 'Critical Care Unit' },
+            general_bed: { label: 'General Beds', icon: 'hotel', prefix: 'GEN', baseName: 'General Bed', ward: 'General Ward' },
+            ventilator: { label: 'Ventilators', icon: 'air', prefix: 'VEN', baseName: 'Ventilator', ward: 'Respiratory Support' },
+            monitor: { label: 'Monitors', icon: 'monitor_heart', prefix: 'MON', baseName: 'Monitor', ward: 'Telemetry Unit' },
+            wheelchair: { label: 'Wheelchairs', icon: 'accessible', prefix: 'WCH', baseName: 'Wheelchair', ward: 'Transport Bay' },
+            or_room: { label: 'Operating Rooms', icon: 'surgical', prefix: 'OR', baseName: 'Operating Room', ward: 'Surgical Wing' },
+        };
+
+        let resourceCache = [];
+        let patientCache = [];
+
+        buildNavigation('admin');
+        hydrateHospitalProfile();
+        bindStaticEvents();
+        loadResources();
+        loadPatients();
+
+        function bindStaticEvents() {
+            document.getElementById('hospital-registration-form').addEventListener('submit', handleHospitalRegistration);
+            document.getElementById('clear-profile-btn').addEventListener('click', resetHospitalProfile);
+            document.getElementById('reload-resources-btn').addEventListener('click', loadResources);
+            document.getElementById('apply-capacity-btn').addEventListener('click', applyCapacityTargets);
+            document.getElementById('add-resource-form').addEventListener('submit', submitAddResource);
+            document.getElementById('assign-resource-form').addEventListener('submit', submitAssignResource);
+        }
+
+        function hydrateHospitalProfile() {
+            const profile = getHospitalProfile();
+            const nameEl = document.getElementById('hospital-display-name');
+            const summaryEl = document.getElementById('hospital-summary');
+            const doctorEl = document.getElementById('profile-doctor');
+            const cityEl = document.getElementById('profile-city');
+            const bedsEl = document.getElementById('profile-beds');
+            const contactEl = document.getElementById('profile-contact');
+
+            if (!profile) {
+                nameEl.textContent = 'COMMAND CENTER';
+                summaryEl.textContent = 'Complete the doctor registration form to replace the default brand and activate hospital-wide manual control.';
+                doctorEl.textContent = 'Not registered';
+                cityEl.textContent = 'Pending setup';
+                bedsEl.textContent = '-';
+                contactEl.textContent = '-';
+                populateProfileForm({});
+                return;
+            }
+
+
+            nameEl.textContent = profile.hospital_name || 'COMMAND CENTER';
+            summaryEl.textContent = `Doctor access is active for ${profile.hospital_name || 'your hospital'}. This name now appears in place of COMMAND CENTER across the shared navigation.`;
+            doctorEl.textContent = profile.doctor_name || '-';
+            cityEl.textContent = profile.hospital_city || '-';
+            bedsEl.textContent = profile.total_beds ? `${profile.total_beds} planned beds` : '-';
+            contactEl.textContent = profile.emergency_contact || '-';
+            populateProfileForm(profile);
+        }
+
+        function populateProfileForm(profile) {
+            document.getElementById('doctor-name').value = profile.doctor_name || '';
+            document.getElementById('doctor-role').value = profile.doctor_role || '';
+            document.getElementById('doctor-email').value = profile.doctor_email || '';
+            document.getElementById('hospital-name').value = profile.hospital_name || '';
+            document.getElementById('hospital-city').value = profile.hospital_city || '';
+            document.getElementById('total-beds').value = profile.total_beds || '';
+            document.getElementById('emergency-contact').value = profile.emergency_contact || '';
+        }
+
+        function handleHospitalRegistration(event) {
+            event.preventDefault();
+
+            const profile = saveHospitalProfile({
+                doctor_name: document.getElementById('doctor-name').value.trim(),
+                doctor_role: document.getElementById('doctor-role').value.trim(),
+                doctor_email: document.getElementById('doctor-email').value.trim(),
+                hospital_name: document.getElementById('hospital-name').value.trim(),
+                hospital_city: document.getElementById('hospital-city').value.trim(),
+                total_beds: document.getElementById('total-beds').value.trim(),
+                emergency_contact: document.getElementById('emergency-contact').value.trim(),
+            });
+
+            hydrateHospitalProfile();
+            syncHospitalBranding();
+            showToast(`Admin login saved for ${profile.hospital_name || 'your hospital'}`, 'success');
+        }
+
+        function resetHospitalProfile() {
+            clearHospitalProfile();
+            hydrateHospitalProfile();
+            showToast('Hospital profile reset to the default brand', 'info');
+        }
+
+        async function loadResources() {
+            const data = await apiFetch('admin_get_resources.php');
+            if (!data || data.status !== 'success') {
+                showToast(data?.message || 'Failed to load resources', 'error');
+                return;
+            }
+
+            resourceCache = Array.isArray(data.resources) ? data.resources : [];
+            updateStatistics(data.stats || {});
+            renderCapacityPlanner();
+            renderResourcesTable(resourceCache);
+            populateResourceAssignmentSelect(resourceCache);
+        }
+
+        async function loadPatients() {
+            const data = await apiFetch('get_patients.php');
+            if (!data || !Array.isArray(data.patients)) {
+                return;
+            }
+
+            patientCache = data.patients;
+            populatePatientAssignmentSelect(patientCache);
+        }
+
+        function updateStatistics(stats) {
+            document.getElementById('stat-total').textContent = stats.total || 0;
+            document.getElementById('stat-icu').textContent = stats.icu_beds || 0;
+            document.getElementById('stat-general').textContent = stats.general_beds || 0;
+            document.getElementById('stat-available').textContent = stats.available_count || 0;
+            document.getElementById('stat-occupied').textContent = stats.occupied_count || 0;
+            document.getElementById('stat-maintenance').textContent = stats.maintenance_count || 0;
+        }
+
+        function renderCapacityPlanner() {
+            const container = document.getElementById('capacity-grid');
+            const cards = Object.entries(RESOURCE_TYPE_CONFIG).map(([type, config]) => {
+                const resources = resourceCache.filter((resource) => resource.type === type);
+                const total = resources.length;
+                const available = resources.filter((resource) => resource.status === 'available').length;
+                const occupied = resources.filter((resource) => resource.status === 'occupied' || resource.patient_id).length;
+
+                return `
+                    <article class="capacity-card" data-type="${type}">
+                        <header>
+                            <div>
+                                <span class="label-caps text-cyan">${escapeHtml(config.label)}</span>
+                                <h3 class="h3" style="font-size: 22px; margin-top: 8px;">${escapeHtml(config.label)}</h3>
+                            </div>
+                            <span class="material-symbols-outlined">${config.icon}</span>
+                        </header>
+                        <div class="capacity-summary">
+                            <div>
+                                <span>Total</span>
+                                <strong>${total}</strong>
+                            </div>
+                            <div>
+                                <span>Available</span>
+                                <strong>${available}</strong>
+                            </div>
+                            <div>
+                                <span>Occupied</span>
+                                <strong>${occupied}</strong>
+                            </div>
+                        </div>
+                        <div class="capacity-stepper">
+                            <button type="button" class="capacity-adjust" data-type="${type}" data-step="-1">-</button>
+                            <input class="capacity-input" data-capacity-input="${type}" type="number" min="${occupied}" value="${total}" />
+                            <button type="button" class="capacity-adjust" data-type="${type}" data-step="1">+</button>
+                        </div>
+                        <p class="capacity-hint">Default location: ${escapeHtml(config.ward)}. Minimum allowed right now: ${occupied} because those units are occupied or assigned.</p>
+                    </article>
+                `;
+            });
+
+            container.innerHTML = cards.join('');
+
+            container.querySelectorAll('.capacity-adjust').forEach((button) => {
+                button.addEventListener('click', () => {
+                    const type = button.dataset.type;
+                    const step = Number(button.dataset.step || 0);
+                    const input = container.querySelector(`[data-capacity-input="${type}"]`);
+                    if (!input) {
+                        return;
+                    }
+
+                    const nextValue = Number(input.value || 0) + step;
+                    const minValue = Number(input.min || 0);
+                    input.value = String(Math.max(minValue, nextValue));
+                });
+            });
+        }
+
+        function populateResourceAssignmentSelect(resources) {
+            const select = document.getElementById('assign-resource-select');
+            const options = resources
+                .filter((resource) => resource.status === 'available')
+                .map((resource) => `<option value="${resource.id}">${escapeHtml(resource.resource_code)} - ${escapeHtml(resource.name)} (${escapeHtml(resource.ward)})</option>`);
+
+            select.innerHTML = '<option value="">Select resource</option>' + options.join('');
+        }
+
+        function populatePatientAssignmentSelect(patients) {
+            const select = document.getElementById('assign-patient-select');
+            const options = patients
+                .filter((patient) => patient.status !== 'discharged')
+                .map((patient) => {
+                    const code = patient.patient_code ? ` (${escapeHtml(patient.patient_code)})` : '';
+                    const severity = patient.severity ? ` - ${escapeHtml(String(patient.severity).toUpperCase())}` : '';
+                    return `<option value="${patient.id}">${escapeHtml(patient.name)}${code}${severity}</option>`;
+                });
+
+            select.innerHTML = '<option value="">Select patient</option>' + options.join('');
+        }
+
+        function parseResourceNumber(resourceCode) {
+            const match = String(resourceCode || '').match(/(\d+)$/);
+            return match ? Number(match[1]) : NaN;
+        }
+
+        function getNextResourceCode(type) {
+            const config = RESOURCE_TYPE_CONFIG[type];
+            const usedNumbers = resourceCache
+                .filter((resource) => resource.type === type)
+                .map((resource) => parseResourceNumber(resource.resource_code))
+                .filter((value) => !Number.isNaN(value));
+            const next = usedNumbers.length > 0 ? Math.max(...usedNumbers) + 1 : 1;
+            return `${config.prefix}-${String(next).padStart(2, '0')}`;
+        }
+
+        function buildResourcePayload(type) {
+            const config = RESOURCE_TYPE_CONFIG[type];
+            const resourceCode = getNextResourceCode(type);
+            const suffix = resourceCode.match(/(\d+)$/)?.[1] || resourceCode;
+            return {
+                resource_code: resourceCode,
+                name: `${config.baseName} ${suffix}`,
+                type,
+                ward: config.ward,
+            };
+        }
+
+        async function applyCapacityTargets() {
+            const button = document.getElementById('apply-capacity-btn');
+            const originalLabel = button.innerHTML;
+            button.disabled = true;
+            button.innerHTML = '<span class="material-symbols-outlined" style="animation: spin 1s linear infinite;">sync</span> Applying...';
+
+            const errors = [];
+            let additions = 0;
+            let removals = 0;
+
+            for (const [type, config] of Object.entries(RESOURCE_TYPE_CONFIG)) {
+                const input = document.querySelector(`[data-capacity-input="${type}"]`);
+                if (!input) {
+                    continue;
+                }
+
+                const target = Number(input.value || 0);
+                const currentResources = resourceCache.filter((resource) => resource.type === type);
+                const occupied = currentResources.filter((resource) => resource.status === 'occupied' || resource.patient_id).length;
+
+                if (target < occupied) {
+                    errors.push(`${config.label} cannot be reduced below ${occupied}.`);
+                    input.value = String(occupied);
+                    continue;
+                }
+
+                const diff = target - currentResources.length;
+                if (diff > 0) {
+                    for (let index = 0; index < diff; index += 1) {
+                        const payload = buildResourcePayload(type);
+                        const result = await apiFetch('admin_add_resource.php', {
+                            method: 'POST',
+                            body: JSON.stringify(payload),
+                        });
+
+                        if (result && result.status === 'success' && result.resource) {
+                            resourceCache.push(result.resource);
+                            additions += 1;
+                        } else {
+                            errors.push(result?.message || `Failed to add ${config.label}.`);
+                            break;
+                        }
+                    }
+                } else if (diff < 0) {
+                    const removable = currentResources
+                        .filter((resource) => resource.status === 'available' && !resource.patient_id)
+                        .sort((a, b) => parseResourceNumber(b.resource_code) - parseResourceNumber(a.resource_code));
+
+                    if (removable.length < Math.abs(diff)) {
+                        errors.push(`${config.label} still has active or unavailable units. Release them before reducing further.`);
+                        input.value = String(currentResources.length);
+                        continue;
+                    }
+
+                    for (let index = 0; index < Math.abs(diff); index += 1) {
+                        const resource = removable[index];
+                        const result = await apiFetch('admin_delete_resource.php', {
+                            method: 'POST',
+                            body: JSON.stringify({ resource_id: resource.id }),
+                        });
+
+                        if (result && result.status === 'success') {
+                            resourceCache = resourceCache.filter((item) => item.id !== resource.id);
+                            removals += 1;
+                        } else {
+                            errors.push(result?.message || `Failed to remove ${config.label}.`);
+                            break;
+                        }
+                    }
+                }
+            }
+
+            button.disabled = false;
+            button.innerHTML = originalLabel;
+
+            if (additions === 0 && removals === 0 && errors.length === 0) {
+                showToast('Inventory already matches the selected targets', 'info');
+            } else if (errors.length === 0) {
+                showToast(`Inventory updated: ${additions} added, ${removals} removed`, 'success');
+            } else {
+                showToast(errors[0], 'error');
+            }
+
+            await loadResources();
+        }
+
+        function renderResourcesTable(resources) {
+            const container = document.getElementById('resources-container');
+
+            if (!resources.length) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <span class="material-symbols-outlined" style="font-size: 32px; display: block; margin-bottom: 10px;">inventory_2</span>
+                        No resources found. Use the capacity planner or add a single resource manually.
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = `
+                <table class="resource-table">
+                    <thead>
+                        <tr>
+                            <th>Resource</th>
+                            <th>Type</th>
+                            <th>Ward</th>
+                            <th>Status</th>
+                            <th>Assigned Patient</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${resources.map((resource) => renderResourceRow(resource)).join('')}
+                    </tbody>
+                </table>
+            `;
+        }
+
+        function renderResourceRow(resource) {
+            const patientMarkup = resource.patient_name
+                ? `<div style="font-size: 12px;"><strong>${escapeHtml(resource.patient_name)}</strong><br /><span style="color: var(--on-surface-variant);">${escapeHtml(resource.patient_code || '')}</span></div>`
+                : '<span style="color: var(--on-surface-variant);">Unassigned</span>';
+
+            return `
+                <tr>
+                    <td>
+                        <div class="resource-code">${escapeHtml(resource.resource_code)}</div>
+                        <div style="font-size: 12px; color: var(--on-surface-variant); margin-top: 4px;">${escapeHtml(resource.name)}</div>
+                    </td>
+                    <td>${escapeHtml(formatResourceType(resource.type))}</td>
+                    <td>${escapeHtml(resource.ward || '-')}</td>
+                    <td>
+                        <span class="status-badge ${escapeHtml(resource.status)}">
+                            <span class="material-symbols-outlined" style="font-size: 14px;">${getStatusIcon(resource.status)}</span>
+                            ${escapeHtml(resource.status)}
+                        </span>
+                    </td>
+                    <td>${patientMarkup}</td>
+                    <td>
+                        <div class="action-buttons">
+                            <select class="status-select" onchange="changeStatus(${resource.id}, this.value)">
+                                <option value="">Change status</option>
+                                <option value="available" ${resource.status === 'available' ? 'selected' : ''}>Available</option>
+                                <option value="occupied" ${resource.status === 'occupied' ? 'selected' : ''}>Occupied</option>
+                                <option value="maintenance" ${resource.status === 'maintenance' ? 'selected' : ''}>Maintenance</option>
+                            </select>
+                            ${resource.patient_id ? `
+                                <button class="btn-small warning" onclick="releaseResource(${resource.id})">
+                                    <span class="material-symbols-outlined" style="font-size: 14px;">close</span>
+                                    Release
+                                </button>
+                            ` : ''}
+                            <button class="btn-small danger" onclick="deleteResource(${resource.id})">
+                                <span class="material-symbols-outlined" style="font-size: 14px;">delete</span>
+                                Delete
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }
+
+        function formatResourceType(type) {
+            const map = {
+                icu_bed: 'ICU Bed',
+                general_bed: 'General Bed',
+                or_room: 'Operating Room',
+                ventilator: 'Ventilator',
+                monitor: 'Monitor',
+                wheelchair: 'Wheelchair',
+                discharge_lounge: 'Discharge Lounge',
+            };
+
+            return map[type] || type;
+        }
+
+        function getStatusIcon(status) {
+            const map = {
+                available: 'check_circle',
+                occupied: 'priority_high',
+                maintenance: 'build',
+            };
+
+            return map[status] || 'help';
+        }
+
+        async function submitAddResource(event) {
+            event.preventDefault();
+
+            const form = event.currentTarget;
+            const submitButton = form.querySelector('button[type="submit"]');
+            const originalLabel = submitButton.innerHTML;
+            submitButton.disabled = true;
+            submitButton.innerHTML = '<span class="material-symbols-outlined" style="animation: spin 1s linear infinite;">sync</span> Saving...';
+
+            const result = await apiFetch('admin_add_resource.php', {
+                method: 'POST',
+                body: JSON.stringify({
+                    resource_code: document.getElementById('resource-code').value.trim(),
+                    name: document.getElementById('resource-name').value.trim(),
+                    type: document.getElementById('resource-type').value,
+                    ward: document.getElementById('resource-ward').value.trim(),
+                }),
+            });
+
+            submitButton.disabled = false;
+            submitButton.innerHTML = originalLabel;
+
+            if (result && result.status === 'success') {
+                showToast(result.message || 'Resource added successfully', 'success');
+                form.reset();
+                await loadResources();
+            } else {
+                showToast(result?.message || 'Failed to add resource', 'error');
+            }
+        }
+
+        async function submitAssignResource(event) {
+            event.preventDefault();
+
+            const resourceId = Number(document.getElementById('assign-resource-select').value);
+            const patientId = Number(document.getElementById('assign-patient-select').value);
+
+            if (!resourceId || !patientId) {
+                showToast('Please select both a resource and a patient', 'error');
+                return;
+            }
+
+            const result = await apiFetch('admin_assign_resource.php', {
+                method: 'POST',
+                body: JSON.stringify({
+                    resource_id: resourceId,
+                    patient_id: patientId,
+                }),
+            });
+
+            if (result && result.status === 'success') {
+                showToast(result.message || 'Resource assigned successfully', 'success');
+                event.currentTarget.reset();
+                await loadResources();
+                await loadPatients();
+            } else {
+                showToast(result?.message || 'Failed to assign resource', 'error');
+            }
+        }
+
+        async function changeStatus(resourceId, nextStatus) {
+            if (!nextStatus) {
+                return;
+            }
+
+            const result = await apiFetch('admin_update_status.php', {
+                method: 'POST',
+                body: JSON.stringify({
+                    resource_id: resourceId,
+                    status: nextStatus,
+                }),
+            });
+
+            if (result && result.status === 'success') {
+                showToast(`Resource marked ${nextStatus}`, 'success');
+                await loadResources();
+            } else {
+                showToast(result?.message || 'Failed to update resource status', 'error');
+                await loadResources();
+            }
+        }
+
+        async function releaseResource(resourceId) {
+            const result = await apiFetch('admin_release_resource.php', {
+                method: 'POST',
+                body: JSON.stringify({ resource_id: resourceId }),
+            });
+
+            if (result && result.status === 'success') {
+                showToast(result.message || 'Resource released', 'success');
+                await loadResources();
+                await loadPatients();
+            } else {
+                showToast(result?.message || 'Failed to release resource', 'error');
+            }
+        }
+
+        async function deleteResource(resourceId) {
+            const result = await apiFetch('admin_delete_resource.php', {
+                method: 'POST',
+                body: JSON.stringify({ resource_id: resourceId }),
+            });
+
+            if (result && result.status === 'success') {
+                showToast(result.message || 'Resource deleted', 'success');
+                await loadResources();
+            } else {
+                showToast(result?.message || 'Failed to delete resource', 'error');
+            }
+        }
+
+        window.changeStatus = changeStatus;
+        window.releaseResource = releaseResource;
+        window.deleteResource = deleteResource;
+    </script>
+</body>
+</html>

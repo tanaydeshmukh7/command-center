@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI Analysis — Command Center</title>
+    <meta name="description" content="AI-powered diagnostic analysis with severity scoring, resource recommendations, reason tags, risk prediction, and clinical rationale." />
+    <link rel="stylesheet" href="styles.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+    <style>
+        .ai-page{display:flex;flex-direction:column;gap:var(--space-lg);position:relative}
+        .patient-selector{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:var(--space-md)}
+        .ps-card{padding:18px;border-radius:var(--radius-xl);background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);cursor:pointer;transition:border-color .25s,box-shadow .25s,transform .15s}
+        .ps-card:hover{border-color:rgba(0,242,255,.25);transform:translateY(-2px)}
+        .ps-card.active{border-color:rgba(0,242,255,.5);box-shadow:0 0 24px rgba(0,242,255,.12)}
+        .ps-card .ps-name{font-size:16px;font-weight:700;color:var(--on-surface)}
+        .ps-card .ps-code{font-size:12px;color:var(--on-surface-variant);margin-top:4px;font-family:'Space Grotesk',sans-serif}
+        .ps-card .ps-sev{margin-top:10px}
+        .severity-pill,.reason-tag,.alert-pill{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:999px;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+        .severity-pill.critical,.reason-tag.critical{background:rgba(255,180,171,.12);border:1px solid rgba(255,180,171,.2);color:var(--error)}
+        .severity-pill.moderate,.reason-tag.moderate{background:rgba(255,214,102,.12);border:1px solid rgba(255,214,102,.2);color:#ffd666}
+        .severity-pill.stable,.reason-tag.stable{background:rgba(0,242,255,.1);border:1px solid rgba(0,242,255,.16);color:var(--primary-container)}
+        .alert-pill.yes{background:rgba(255,80,80,.14);border:1px solid rgba(255,80,80,.25);color:#ff6b6b}
+        .alert-pill.no{background:rgba(76,175,80,.12);border:1px solid rgba(76,175,80,.2);color:#6dd96f}
+        .analysis-grid{display:grid;grid-template-columns:7fr 5fr;gap:var(--space-md)}
+        .severity-card{border-color:rgba(255,36,228,.2);transition:border-color .4s}
+        .severity-card:hover{border-color:rgba(255,36,228,.5)}
+        .severity-score{font-family:'Space Grotesk',sans-serif;font-size:100px;font-weight:900;color:var(--secondary-container);line-height:1;text-shadow:0 0 30px rgba(255,36,228,.6);transition:transform .5s}
+        .severity-card:hover .severity-score{transform:scale(1.05)}
+        .right-col{display:flex;flex-direction:column;gap:var(--grid-gutter,16px)}
+        .confidence-bar{width:100%;height:8px;background:var(--surface-container-highest);border-radius:4px;overflow:hidden}
+        .confidence-fill{height:100%;background:linear-gradient(to right,var(--primary-fixed-dim),var(--primary-container));border-radius:4px;box-shadow:0 0 10px rgba(0,242,255,.5);transition:width .6s}
+        .reason-tags-wrap{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+        .risk-bar-wrap{margin-top:12px}
+        .risk-bar-bg{width:100%;height:12px;background:rgba(255,255,255,.06);border-radius:6px;overflow:hidden}
+        .risk-bar-fill{height:100%;border-radius:6px;transition:width .8s}
+        .risk-bar-fill.high{background:linear-gradient(90deg,#ff4444,#ff6b6b)}
+        .risk-bar-fill.moderate{background:linear-gradient(90deg,#ffa726,#ffd666)}
+        .risk-bar-fill.low{background:linear-gradient(90deg,#66bb6a,#81c784)}
+        .risk-bar-fill.minimal{background:linear-gradient(90deg,#00f2ff,#4dd0e1)}
+        .rationale-item{display:flex;gap:14px;align-items:flex-start}
+        .rationale-icon{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+        .rationale-icon.pink{background:rgba(255,36,228,.1);border:1px solid rgba(255,36,228,.3)}
+        .rationale-icon.cyan{background:rgba(0,242,255,.1);border:1px solid rgba(0,242,255,.3)}
+        .rationale-icon.purple{background:rgba(234,210,255,.1);border:1px solid rgba(234,210,255,.3)}
+        .wave-bars{display:flex;align-items:flex-end;justify-content:space-between;gap:4px;width:100%;height:64px;opacity:.6}
+        .wave-bars div{flex:1;border-radius:3px 3px 0 0}
+        .empty-state{padding:60px 24px;text-align:center;color:var(--on-surface-variant);border:1px dashed rgba(255,255,255,.12);border-radius:var(--radius-lg)}
+        @media(max-width:1100px){.analysis-grid{grid-template-columns:1fr}}
+        @media(max-width:700px){.patient-selector{grid-template-columns:1fr}}
+    </style>
+</head>
+<body>
+    <div class="main-content" id="main-content">
+        <main class="canvas ai-page" style="position:relative;">
+            <div class="ambient-glow" style="top:25%;left:25%;width:400px;height:400px;background:rgba(0,242,255,.06);"></div>
+            <div class="ambient-glow" style="bottom:25%;right:25%;width:400px;height:400px;background:rgba(255,36,228,.06);"></div>
+
+            <section class="animate-fade-in" style="position:relative;z-index:10;">
+                <div class="flex justify-between items-center" style="gap:16px;flex-wrap:wrap;">
+                    <div>
+                        <span class="label-caps text-cyan">AI Diagnostic Engine</span>
+                        <h1 class="h1" style="margin-top:10px;">AI Analysis Center</h1>
+                        <p class="body-lg text-muted" style="margin-top:8px;max-width:760px;">Select any patient to view real-time AI severity scoring, reason tags, 1-hour risk prediction, alert status, and recommended resource allocation.</p>
+                    </div>
+                    <button class="btn btn-secondary" id="btn-refresh" onclick="loadAllPatients()">
+                        <span class="material-symbols-outlined">refresh</span> Refresh
+                    </button>
+                </div>
+            </section>
+
+            <section class="animate-fade-in" style="animation-delay:.1s;position:relative;z-index:10;">
+                <div class="label-caps text-cyan" style="margin-bottom:14px;">Select Patient</div>
+                <div class="patient-selector" id="patient-selector">
+                    <div class="empty-state" style="grid-column:1/-1;">
+                        <span class="material-symbols-outlined" style="font-size:32px;display:block;margin-bottom:10px;animation:spin 1s linear infinite;">sync</span>
+                        Loading patients...
+                    </div>
+                </div>
+            </section>
+
+            <section id="analysis-section" style="display:none;position:relative;z-index:10;" class="animate-fade-in">
+                <div id="analysis-content"></div>
+            </section>
+
+            <div class="flex justify-between mt-lg animate-fade-in" style="animation-delay:.3s;position:relative;z-index:10;">
+                <a href="patient-list.html" class="btn btn-outline">
+                    <span class="material-symbols-outlined">arrow_back</span> Back to Roster
+                </a>
+                <div class="flex gap-sm">
+                    <button class="btn btn-outline" onclick="showToast('Human review requested','info')">Request Human Review</button>
+                    <button class="btn btn-primary" id="btn-execute-allocation" onclick="executeAllocation()" disabled>
+                        <span class="material-symbols-outlined">check_circle</span> Execute Allocation
+                    </button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="shared.js"></script>
+    <script>
+        if (!enforceAdminAccess()) throw new Error('Admin login required');
+        buildNavigation('ai-analysis');
+
+        let allPatients = [];
+        let selectedPatientId = null;
+        let currentAnalysis = null;
+
+        // Check URL for patient_id
+        const urlParams = new URLSearchParams(window.location.search);
+        const urlPatientId = urlParams.get('patient_id');
+
+        loadAllPatients();
+
+        async function loadAllPatients() {
+            const data = await apiFetch('get_patients.php');
+            if (!data || !Array.isArray(data.patients)) {
+                document.getElementById('patient-selector').innerHTML = '<div class="empty-state" style="grid-column:1/-1;">Failed to load patients. Check database connection.</div>';
+                return;
+            }
+            allPatients = data.patients;
+            renderPatientCards();
+
+            if (urlPatientId && !selectedPatientId) {
+                selectPatient(Number(urlPatientId));
+            }
+        }
+
+        function renderPatientCards() {
+            const container = document.getElementById('patient-selector');
+            if (!allPatients.length) {
+                container.innerHTML = '<div class="empty-state" style="grid-column:1/-1;">No patients found. Add patients first.</div>';
+                return;
+            }
+
+            container.innerHTML = allPatients.map(p => {
+                const sev = String(p.severity || 'stable').toLowerCase();
+                const isActive = Number(p.id) === selectedPatientId;
+                const o2 = p.oxygen_level ? p.oxygen_level + '%' : 'N/A';
+                return `
+                <div class="ps-card ${isActive ? 'active' : ''}" data-id="${p.id}" onclick="selectPatient(${p.id})">
+                    <div class="ps-name">${escapeHtml(p.name)}</div>
+                    <div class="ps-code">${escapeHtml(p.patient_code || 'PT-'+p.id)} · Age ${escapeHtml(p.age)} · ${p.gender === 'M' ? 'Male' : p.gender === 'F' ? 'Female' : 'Other'}</div>
+                    <div class="ps-sev">
+                        <span class="severity-pill ${sev}"><span class="material-symbols-outlined" style="font-size:13px;">${sev==='critical'?'warning':sev==='moderate'?'siren':'check_circle'}</span> ${sev.toUpperCase()}</span>
+                        <span style="margin-left:8px;font-size:12px;color:var(--on-surface-variant);">SpO₂ ${o2}</span>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        async function selectPatient(id) {
+            selectedPatientId = id;
+            renderPatientCards();
+
+            const section = document.getElementById('analysis-section');
+            const content = document.getElementById('analysis-content');
+            section.style.display = 'block';
+            content.innerHTML = '<div class="empty-state"><span class="material-symbols-outlined" style="font-size:32px;display:block;margin-bottom:10px;animation:spin 1s linear infinite;">sync</span>Running AI analysis...</div>';
+
+            const data = await apiFetch(`ai_analyze.php?patient_id=${id}`);
+            if (!data || !data.patient) {
+                content.innerHTML = '<div class="empty-state">Analysis failed. Patient not found.</div>';
+                return;
+            }
+
+            currentAnalysis = data;
+            renderAnalysis(data);
+            document.getElementById('btn-execute-allocation').disabled = false;
+        }
+
+        function renderAnalysis(data) {
+            const p = data.patient;
+            const ai = data.analysis;
+            const expl = data.explanation;
+            const content = document.getElementById('analysis-content');
+
+            const sevClass = ai.severity || 'stable';
+            const sevScore = typeof ai.severity_score === 'number' ? ai.severity_score.toFixed(1) : '--';
+            const confidence = ai.confidence || 0;
+            const reasonTags = Array.isArray(ai.reason_tags) ? ai.reason_tags : [];
+            const risk = ai.predicted_risk || {};
+            const riskPct = risk.risk_percent || 0;
+            const riskLevel = (risk.risk_level || 'MINIMAL').toLowerCase();
+            const alertTriggered = risk.alert_triggered || false;
+            const markers = ai.rationale?.markers || [];
+
+            // Build reason tags HTML
+            const tagsHTML = reasonTags.map(t => `
+                <span class="reason-tag ${t.severity}">
+                    <span class="material-symbols-outlined" style="font-size:13px;">${t.icon}</span>
+                    ${escapeHtml(t.label)}
+                </span>
+            `).join('');
+
+            // Build rationale markers HTML
+            const rationaleHTML = markers.map(m => {
+                const colorMap = {pink:'255,36,228', cyan:'0,242,255', purple:'234,210,255'};
+                const rgb = colorMap[m.color] || colorMap.cyan;
+                return `
+                <div class="rationale-item" style="margin-bottom:16px;">
+                    <div class="rationale-icon ${m.color}">
+                        <span class="material-symbols-outlined" style="font-size:16px;">${m.icon}</span>
+                    </div>
+                    <div>
+                        <div style="font-weight:600;color:var(--on-surface);">${escapeHtml(m.title)}</div>
+                        <div style="font-size:13px;color:var(--on-surface-variant);margin-top:4px;line-height:1.6;">${escapeHtml(m.detail)}</div>
+                    </div>
+                </div>`;
+            }).join('');
+
+            // Wave bars
+            const scorePercent = (ai.severity_score / 10) * 100;
+            const waveBars = [12.5,25,50,75,100,62.5,37.5].map((base,i) => {
+                const h = Math.max(10, Math.min(100, scorePercent * (base/100) * 1.2));
+                return `<div style="height:${h}%;background:rgba(255,36,228,${0.2 + (i*0.12)});${i===4?'box-shadow:0 0 10px rgba(255,36,228,.5);':''}"></div>`;
+            }).join('');
+
+            content.innerHTML = `
+            <div style="margin-bottom:20px;">
+                <div class="flex justify-between items-center" style="flex-wrap:wrap;gap:12px;">
+                    <div>
+                        <span class="label-caps text-cyan">Diagnostic Overview</span>
+                        <h2 class="h2" style="margin-top:8px;">${escapeHtml(p.name)}</h2>
+                        <p class="body-md text-muted" style="margin-top:6px;">Patient #${escapeHtml(p.patient_code||'PT-'+p.id)} · Age ${escapeHtml(p.age)} · ${p.gender==='M'?'Male':p.gender==='F'?'Female':'Other'}</p>
+                    </div>
+                    <div class="flex gap-sm" style="flex-wrap:wrap;">
+                        <span class="alert-pill ${alertTriggered?'yes':'no'}">
+                            <span class="material-symbols-outlined" style="font-size:14px;">${alertTriggered?'notifications_active':'notifications_off'}</span>
+                            Alert triggered: ${alertTriggered?'YES':'NO'}
+                        </span>
+                        <span class="severity-pill ${sevClass}">
+                            <span class="material-symbols-outlined" style="font-size:14px;">vital_signs</span>
+                            ${sevClass.toUpperCase()}
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="analysis-grid">
+                <!-- Left: Severity Score -->
+                <div class="glass-panel light-leak rounded-xl p-md severity-card">
+                    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:340px;position:relative;">
+                        <div class="flex items-center gap-sm label-caps text-muted" style="position:absolute;top:20px;left:20px;">
+                            <span class="material-symbols-outlined text-pink">vital_signs</span>
+                            AI ASSESSED SEVERITY
+                        </div>
+                        <div class="severity-score" style="margin-top:24px;">${sevScore}</div>
+                        <span class="severity-pill ${sevClass}" style="margin-top:16px;padding:6px 20px;font-size:11px;">${sevClass.toUpperCase()} STATUS</span>
+                        <div class="wave-bars" style="margin-top:40px;">${waveBars}</div>
+                    </div>
+                </div>
+
+                <!-- Right Column -->
+                <div class="right-col">
+                    <!-- Action Required -->
+                    <div class="glass-panel rounded-xl p-md" style="border-color:rgba(0,242,255,.2);position:relative;overflow:hidden;">
+                        <h3 class="h3 flex items-center gap-sm mb-md">
+                            <span class="material-symbols-outlined" style="color:var(--primary-container);">local_hospital</span>
+                            Action Required
+                        </h3>
+                        <div style="background:rgba(19,19,21,.5);border-radius:var(--radius-md);padding:16px;border:1px solid rgba(255,255,255,.05);margin-bottom:16px;">
+                            <div class="label-caps text-muted mb-sm">Recommended Resource</div>
+                            <div class="h2" style="color:var(--primary-container);letter-spacing:-.02em;">${escapeHtml(ai.recommended_resource)}</div>
+                            <div style="margin-top:8px;font-size:14px;color:var(--outline);display:flex;align-items:center;gap:6px;">
+                                <span style="width:8px;height:8px;border-radius:50%;background:var(--primary-container);box-shadow:0 0 5px rgba(0,242,255,.8);display:inline-block;"></span>
+                                ${p.resource_name ? 'Currently allocated: '+escapeHtml(p.resource_name) : 'Awaiting allocation'}
+                            </div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between items-center mb-sm">
+                                <span class="label-caps text-muted">Model Confidence</span>
+                                <span class="h3" style="color:var(--primary-container);">${confidence}%</span>
+                            </div>
+                            <div class="confidence-bar"><div class="confidence-fill" style="width:${confidence}%;"></div></div>
+                        </div>
+                    </div>
+
+                    <!-- Predicted Risk -->
+                    <div class="glass-panel rounded-xl p-md" style="border-color:rgba(255,36,228,.15);">
+                        <h3 class="h3 flex items-center gap-sm mb-md">
+                            <span class="material-symbols-outlined" style="color:var(--secondary-container);">speed</span>
+                            Predicted risk in next 1 hour
+                        </h3>
+                        <div style="display:flex;align-items:center;gap:16px;margin-bottom:12px;">
+                            <div class="h1" style="color:${riskPct>=70?'var(--error)':riskPct>=40?'#ffd666':'var(--primary-container)'};">${riskPct}%</div>
+                            <div>
+                                <div style="font-weight:700;color:var(--on-surface);font-size:14px;text-transform:uppercase;">${risk.risk_level || 'N/A'} RISK</div>
+                                <div style="font-size:13px;color:var(--on-surface-variant);margin-top:4px;">${escapeHtml(risk.risk_description || '')}</div>
+                            </div>
+                        </div>
+                        <div class="risk-bar-wrap">
+                            <div class="risk-bar-bg"><div class="risk-bar-fill ${riskLevel}" style="width:${riskPct}%;"></div></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Reason Tags + Rationale -->
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-md);margin-top:var(--space-md);">
+                <div class="glass-panel rounded-xl p-md">
+                    <h3 class="h3 flex items-center gap-sm" style="border-bottom:1px solid rgba(255,255,255,.1);padding-bottom:14px;margin-bottom:16px;">
+                        <span class="material-symbols-outlined" style="color:var(--primary-container);">label</span>
+                        Reason Tags
+                    </h3>
+                    <div class="reason-tags-wrap">${tagsHTML || '<span class="text-muted">No reason tags generated.</span>'}</div>
+                </div>
+
+                <div class="glass-panel rounded-xl p-md">
+                    <h3 class="h3 flex items-center gap-sm" style="border-bottom:1px solid rgba(255,255,255,.1);padding-bottom:14px;margin-bottom:16px;">
+                        <span class="material-symbols-outlined" style="color:var(--tertiary-container);">troubleshoot</span>
+                        AI Rationale
+                    </h3>
+                    <div>${rationaleHTML || '<div class="text-muted">No rationale markers available.</div>'}</div>
+                </div>
+            </div>
+
+            ${expl ? `
+            <div class="glass-panel rounded-xl p-md" style="margin-top:var(--space-md);border-color:rgba(234,210,255,.2);">
+                <h3 class="h3 flex items-center gap-sm mb-md">
+                    <span class="material-symbols-outlined" style="color:var(--tertiary-container);">auto_awesome</span>
+                    AI Allocation Summary
+                </h3>
+                <p class="body-lg" style="color:var(--on-surface-variant);line-height:1.7;">${escapeHtml(expl.summary || '')}</p>
+                ${expl.recommendation ? `<div style="margin-top:14px;padding:14px;background:rgba(19,19,21,.5);border-radius:var(--radius-md);border:1px solid rgba(255,255,255,.05);color:var(--on-surface-variant);font-size:14px;"><strong style="color:var(--primary-container);">Resource Justification:</strong> ${escapeHtml(expl.recommendation)}</div>` : ''}
+            </div>` : ''}
+            `;
+
+            section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        async function executeAllocation() {
+            if (!selectedPatientId) return;
+            const btn = document.getElementById('btn-execute-allocation');
+            btn.innerHTML = '<span class="material-symbols-outlined" style="animation:spin 1s linear infinite;">sync</span> Allocating...';
+            btn.disabled = true;
+
+            const result = await apiFetch('allocate_resource.php', {
+                method: 'POST',
+                body: JSON.stringify({ patient_id: selectedPatientId }),
+            });
+
+            if (result && result.status === 'success') {
+                showToast(result.message, 'success');
+                notifyAllocationUpdate();
+                setTimeout(() => selectPatient(selectedPatientId), 1200);
+            } else {
+                showToast(result?.message || 'Allocation failed', 'error');
+            }
+            btn.innerHTML = '<span class="material-symbols-outlined">check_circle</span> Execute Allocation';
+            btn.disabled = false;
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Reports — Command Center</title>
+    <meta name="description" content="System analytics and performance reports — AI decisions, resource efficiency, and critical incident tracking." />
+    <link rel="stylesheet" href="styles.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+    <style>
+        .stat-card {
+            background: rgba(28, 27, 29, 0.4);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(58, 73, 75, 0.3);
+            border-radius: var(--radius-xl);
+            padding: var(--space-md);
+            position: relative;
+            overflow: hidden;
+            transition: border-color 0.5s;
+        }
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, transparent, transparent);
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+        }
+        .stat-card:hover::before { opacity: 1; }
+
+        .stat-card.cyan-hover:hover { border-color: rgba(0,242,255,0.5); }
+        .stat-card.cyan-hover::before { background: linear-gradient(135deg, rgba(0,242,255,0.03), transparent); }
+        .stat-card.pink-hover:hover { border-color: rgba(255,172,232,0.5); }
+        .stat-card.pink-hover::before { background: linear-gradient(135deg, rgba(255,172,232,0.03), transparent); }
+        .stat-card.error-hover:hover { border-color: rgba(255,180,171,0.5); }
+        .stat-card.error-hover::before { background: linear-gradient(135deg, rgba(255,180,171,0.03), transparent); }
+
+        .stat-card .glow-blob {
+            position: absolute;
+            top: -50%;
+            right: -30%;
+            width: 130px;
+            height: 130px;
+            border-radius: 50%;
+            filter: blur(50px);
+            pointer-events: none;
+        }
+
+        .stat-icon-wrap {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .stat-value {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 48px;
+            font-weight: 700;
+            line-height: 1.1;
+        }
+
+        .trend-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .chart-panel {
+            background: rgba(28, 27, 29, 0.4);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(58, 73, 75, 0.3);
+            border-radius: var(--radius-xl);
+            padding: var(--space-md);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .chart-panel .overlay-gradient {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(to bottom, transparent, rgba(14,14,16,0.8));
+            pointer-events: none;
+        }
+
+        .time-btn {
+            padding: 4px 12px;
+            border-radius: var(--radius-sm);
+            font-size: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .time-btn.active {
+            border: 1px solid rgba(0,242,255,0.5);
+            background: rgba(0,242,255,0.1);
+            color: var(--primary-container);
+        }
+        .time-btn:not(.active) {
+            border: 1px solid var(--outline-variant);
+            color: var(--on-surface-variant);
+            background: transparent;
+        }
+        .time-btn:not(.active):hover {
+            background: var(--surface-variant);
+        }
+
+        .dept-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px;
+            border-radius: var(--radius-md);
+            background: rgba(32,31,33,0.5);
+            border: 1px solid rgba(58,73,75,0.2);
+            transition: border-color 0.3s;
+        }
+        .dept-item:hover { border-color: rgba(255,255,255,0.15); }
+        .dept-bar {
+            width: 8px;
+            height: 32px;
+            border-radius: 4px;
+        }
+
+        .mini-ring {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            border: 4px solid var(--surface-container);
+            position: relative;
+        }
+    </style>
+</head>
+<body>
+    <div class="main-content" id="main-content">
+        <main class="canvas" style="max-width: 1600px;">
+            <!-- Header -->
+            <div class="flex justify-between items-center mb-lg animate-fade-in" style="flex-wrap: wrap; gap: 16px;">
+                <div>
+                    <h2 class="h2" style="text-shadow: 0 0 10px rgba(255,255,255,0.05);">System Analytics</h2>
+                    <p class="body-md text-muted" style="margin-top: 4px;">Real-time performance and resource utilization metrics.</p>
+                </div>
+                <div class="flex gap-sm">
+                    <button class="btn btn-outline" style="border-color: rgba(255,172,232,0.5); color: var(--secondary); box-shadow: 0 0 10px rgba(255,172,232,0.1);"
+                            onclick="alert('Exporting PDF report...')">
+                        <span class="material-symbols-outlined" style="font-size: 18px;">picture_as_pdf</span>
+                        Export PDF
+                    </button>
+                    <button class="btn btn-outline" style="border-color: rgba(0,242,255,0.5); color: var(--primary-container); box-shadow: 0 0 10px rgba(0,242,255,0.1);"
+                            onclick="alert('Exporting CSV data...')">
+                        <span class="material-symbols-outlined" style="font-size: 18px;">table_chart</span>
+                        Export CSV
+                    </button>
+                </div>
+            </div>
+
+            <!-- Stats Row -->
+            <div class="grid-3 mb-md animate-fade-in" style="animation-delay: 0.1s;">
+                <!-- Total Decisions -->
+                <div class="stat-card cyan-hover">
+                    <div class="glow-blob" style="background: rgba(0,242,255,0.1);"></div>
+                    <div class="flex justify-between items-center mb-lg" style="position: relative; z-index: 1;">
+                        <span class="label-caps text-muted">Total Decisions</span>
+                        <div class="stat-icon-wrap" style="background: rgba(0,242,255,0.2); border: 1px solid rgba(0,242,255,0.3);">
+                            <span class="material-symbols-outlined text-cyan" style="font-size: 18px;">psychology</span>
+                        </div>
+                    </div>
+                    <div style="position: relative; z-index: 1;">
+                        <div class="stat-value text-cyan" style="text-shadow: 0 0 15px rgba(0,242,255,0.4);">84,291</div>
+                        <div class="trend-badge label-caps text-pink" style="margin-top: 8px;">
+                            <span class="material-symbols-outlined" style="font-size: 14px;">trending_up</span>
+                            +12.4% vs last month
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Resource Efficiency -->
+                <div class="stat-card pink-hover">
+                    <div class="glow-blob" style="background: rgba(255,172,232,0.1);"></div>
+                    <div class="flex justify-between items-center mb-lg" style="position: relative; z-index: 1;">
+                        <span class="label-caps text-muted">Resource Efficiency</span>
+                        <div class="stat-icon-wrap" style="background: rgba(255,172,232,0.2); border: 1px solid rgba(255,172,232,0.3);">
+                            <span class="material-symbols-outlined text-pink" style="font-size: 18px;">bolt</span>
+                        </div>
+                    </div>
+                    <div class="flex justify-between items-center" style="position: relative; z-index: 1;">
+                        <div>
+                            <div class="stat-value text-pink" style="text-shadow: 0 0 15px rgba(255,172,232,0.4);">96.8%</div>
+                            <div style="font-size: 14px; color: var(--on-surface-variant); margin-top: 4px;">Optimal Allocation</div>
+                        </div>
+                        <div class="mini-ring">
+                            <svg style="position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg);" viewBox="0 0 36 36">
+                                <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="var(--secondary)" stroke-dasharray="90, 100" stroke-width="4" style="filter: drop-shadow(0 0 4px var(--secondary));"></path>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Active Alerts -->
+                <div class="stat-card error-hover">
+                    <div class="glow-blob" style="background: rgba(255,180,171,0.1);"></div>
+                    <div class="flex justify-between items-center mb-lg" style="position: relative; z-index: 1;">
+                        <span class="label-caps text-muted">Active Alerts</span>
+                        <div style="display: flex; align-items: center; gap: 4px; background: rgba(147,0,10,0.3); border: 1px solid rgba(255,180,171,0.5); padding: 4px 8px; border-radius: var(--radius-full); box-shadow: 0 0 8px rgba(255,180,171,0.3);">
+                            <span style="width: 8px; height: 8px; border-radius: 50%; background: var(--error); animation: pulse 1.5s infinite;"></span>
+                            <span class="label-caps text-error" style="font-size: 10px;">Action Req</span>
+                        </div>
+                    </div>
+                    <div style="position: relative; z-index: 1;">
+                        <div class="stat-value text-error" style="text-shadow: 0 0 15px rgba(255,180,171,0.4);">03</div>
+                        <div style="font-size: 14px; color: var(--on-surface-variant); margin-top: 4px;">Requires manual intervention</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts Row -->
+            <div style="display: grid; grid-template-columns: 2fr 1fr; gap: var(--grid-gutter); flex: 1;" class="animate-fade-in" id="charts-row">
+                <!-- Trends Chart -->
+                <div class="chart-panel">
+                    <div class="overlay-gradient"></div>
+                    <div class="flex justify-between items-center mb-lg" style="position: relative; z-index: 1;">
+                        <h3 class="h3">Monthly Trends</h3>
+                        <div class="flex gap-sm">
+                            <button class="time-btn active label-caps">7D</button>
+                            <button class="time-btn label-caps">30D</button>
+                            <button class="time-btn label-caps">90D</button>
+                        </div>
+                    </div>
+                    <!-- SVG Line Chart -->
+                    <div style="position: relative; z-index: 1; min-height: 250px; margin-top: 16px; border-left: 1px solid rgba(58,73,75,0.3); border-bottom: 1px solid rgba(58,73,75,0.3); padding: 32px 0 16px;">
+                        <!-- Grid Lines -->
+                        <div style="position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: space-between; pointer-events: none;">
+                            <div style="width: 100%; height: 1px; background: rgba(58,73,75,0.1);"></div>
+                            <div style="width: 100%; height: 1px; background: rgba(58,73,75,0.1);"></div>
+                            <div style="width: 100%; height: 1px; background: rgba(58,73,75,0.1);"></div>
+                            <div style="width: 100%; height: 1px; background: rgba(58,73,75,0.1);"></div>
+                        </div>
+                        <svg style="position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible;" preserveAspectRatio="none" viewBox="0 0 100 100">
+                            <defs>
+                                <linearGradient id="lineGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                                    <stop offset="0%" stop-color="#00f2ff" />
+                                    <stop offset="100%" stop-color="#fface8" />
+                                </linearGradient>
+                                <filter id="glowFilter" x="-20%" y="-20%" width="140%" height="140%">
+                                    <feGaussianBlur stdDeviation="3" result="blur" />
+                                    <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                                </filter>
+                            </defs>
+                            <path d="M 0,80 Q 20,70 40,30 T 70,50 T 100,20" fill="none" stroke="url(#lineGrad)" stroke-width="2" vector-effect="non-scaling-stroke" filter="url(#glowFilter)" style="filter: drop-shadow(0 5px 15px rgba(0,242,255,0.3));" />
+                            <circle cx="0" cy="80" r="3" fill="var(--background)" stroke="#00f2ff" stroke-width="2" />
+                            <circle cx="40" cy="30" r="4" fill="var(--background)" stroke="#00f2ff" stroke-width="2" style="filter: drop-shadow(0 0 8px rgba(0,242,255,0.8));" />
+                            <circle cx="70" cy="50" r="3" fill="var(--background)" stroke="url(#lineGrad)" stroke-width="2" />
+                            <circle cx="100" cy="20" r="4" fill="var(--background)" stroke="#fface8" stroke-width="2" style="filter: drop-shadow(0 0 8px rgba(255,172,232,0.8));" />
+                        </svg>
+                        <!-- X-axis labels -->
+                        <div style="position: absolute; bottom: -24px; width: 100%; display: flex; justify-content: space-between;" class="label-caps text-muted" >
+                            <span style="font-size: 10px;">Wk 1</span>
+                            <span style="font-size: 10px;">Wk 2</span>
+                            <span style="font-size: 10px;">Wk 3</span>
+                            <span style="font-size: 10px;">Wk 4</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Allocation Breakdown -->
+                <div class="chart-panel" style="display: flex; flex-direction: column;">
+                    <h3 class="h3 mb-lg">Allocation Breakdown</h3>
+                    <div style="flex: 1; display: flex; flex-direction: column; justify-content: center; gap: var(--space-sm);">
+                        <div class="dept-item" style="cursor: pointer;" onclick="window.location.href='bias-checker.html'">
+                            <div class="flex items-center gap-sm">
+                                <div class="dept-bar" style="background: var(--tertiary-container); box-shadow: 0 0 8px var(--tertiary-container);"></div>
+                                <div>
+                                    <div class="label-caps">Emergency</div>
+                                    <div style="font-size: 12px; color: var(--on-surface-variant);">High Priority</div>
+                                </div>
+                            </div>
+                            <span class="h3">42%</span>
+                        </div>
+                        <div class="dept-item" style="cursor: pointer;" onclick="window.location.href='bias-checker.html'">
+                            <div class="flex items-center gap-sm">
+                                <div class="dept-bar" style="background: var(--primary-container); box-shadow: 0 0 8px var(--primary-container);"></div>
+                                <div>
+                                    <div class="label-caps">Intensive Care</div>
+                                    <div style="font-size: 12px; color: var(--on-surface-variant);">Critical Monitor</div>
+                                </div>
+                            </div>
+                            <span class="h3">35%</span>
+                        </div>
+                        <div class="dept-item" style="cursor: pointer;" onclick="window.location.href='bias-checker.html'">
+                            <div class="flex items-center gap-sm">
+                                <div class="dept-bar" style="background: var(--secondary); box-shadow: 0 0 8px var(--secondary);"></div>
+                                <div>
+                                    <div class="label-caps">General Wards</div>
+                                    <div style="font-size: 12px; color: var(--on-surface-variant);">Standard Capacity</div>
+                                </div>
+                            </div>
+                            <span class="h3">23%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="shared.js"></script>
+    <script>
+        if (!enforceAdminAccess()) throw new Error('Admin login required');
+        buildNavigation('reports');
+
+        // Time button toggle
+        document.querySelectorAll('.time-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.time-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+            });
+        });
+
+        // Load live reports data
+        (async function() {
+            const data = await apiFetch('get_reports.php');
+            if (!data || !data.reports) return;
+            const r = data.reports;
+
+            // Update stat cards
+            const statValues = document.querySelectorAll('.stat-value');
+            if (statValues[0]) statValues[0].textContent = formatNum(r.total_decisions);
+            if (statValues[1]) statValues[1].textContent = r.resource_efficiency + '%';
+            if (statValues[2]) statValues[2].textContent = String(r.active_alerts).padStart(2, '0');
+
+            // Update ward breakdown
+            const deptItems = document.querySelectorAll('.dept-item');
+            if (r.ward_breakdown) {
+                r.ward_breakdown.forEach((w, i) => {
+                    if (deptItems[i]) {
+                        const label = deptItems[i].querySelector('.label-caps');
+                        const value = deptItems[i].querySelector('.h3');
+                        if (label) label.textContent = w.ward;
+                        if (value) {
+                            const total = r.ward_breakdown.reduce((sum, x) => sum + parseInt(x.count), 0);
+                            value.textContent = total > 0 ? Math.round((w.count / total) * 100) + '%' : '0%';
+                        }
+                    }
+                });
+            }
+        })();
+    </script>
+</body>
+</html>

@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Resources — Command Center</title>
+    <meta name="description" content="Smart Resource Allocation Engine - Automated patient-to-resource mapping using predictive AI models." />
+    <link rel="stylesheet" href="styles.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+    <style>
+        .ai-core {
+            width: 128px;
+            height: 128px;
+            border-radius: 50%;
+            border: 2px solid var(--primary-container);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(14, 14, 16, 0.8);
+            backdrop-filter: blur(10px);
+            position: relative;
+            overflow: hidden;
+            animation: border-pulse 2s infinite alternate;
+        }
+        .ai-core::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCM_cK5I9PVfcxuWluvARDmdl9IlAbdAntB4XDImADYr5MexK_6bVvhWOhxzk34O8zoU_ZxFGlUqBYCb2azojlOnneBu5jcX9tlK4VRpEWl517UvzXJQ114YwVjNOEl97k6WlixXFdv9xFkwmVeqUjoReXI5WtdmL_OuzhgBmAZ2thj_32Ul76dXQGm7aXa7YjHeeDXZbyx8gPNLUUeFUqRnGye4l5P4kUBkiHWHlVAkNteMt0BVZSdH34s8Tn5x31xfBn8cFgDB94') center/cover;
+            opacity: 0.2;
+            transition: opacity 0.3s;
+        }
+        .ai-core:hover::before { opacity: 0.4; }
+
+        .flow-section {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+        }
+        .flow-col {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            width: 260px;
+            flex-shrink: 0;
+        }
+        .flow-connector {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+        .flow-arrow {
+            color: var(--primary-container);
+            opacity: 0.5;
+        }
+        .patient-node, .resource-node {
+            padding: 16px;
+            border-radius: var(--radius-xl);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .patient-node { border-color: var(--primary-container); }
+        .node-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--surface-variant);
+            border: 1px solid var(--outline-variant);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .result-card {
+            padding: 24px;
+            border-radius: var(--radius-xl);
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            position: relative;
+            overflow: hidden;
+        }
+        .result-card .card-glow {
+            position: absolute;
+            top: -40px;
+            right: -40px;
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            filter: blur(40px);
+            pointer-events: none;
+        }
+        .result-mapping {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .run-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            background: var(--primary-container);
+            color: var(--on-primary-container);
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 20px;
+            font-weight: 600;
+            padding: 16px 48px;
+            border-radius: var(--radius-full);
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 0 15px rgba(0, 242, 255, 0.3);
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .run-btn:hover {
+            transform: scale(1.02);
+            background: var(--primary);
+            box-shadow: 0 0 30px rgba(0, 242, 255, 0.5);
+        }
+        .run-btn .material-symbols-outlined {
+            transition: transform 0.5s;
+        }
+        .run-btn:hover .material-symbols-outlined {
+            transform: rotate(180deg);
+        }
+    </style>
+</head>
+<body>
+    <div class="main-content" id="main-content">
+        <main class="canvas" style="display: flex; flex-direction: column; gap: var(--space-lg); position: relative;">
+            <!-- Ambient -->
+            <div class="ambient-glow" style="top: -20%; left: 50%; width: 800px; height: 800px; background: rgba(0,242,255,0.04); transform: translateX(-50%);"></div>
+
+            <!-- Header -->
+            <div class="flex justify-between items-center animate-fade-in" style="border-bottom: 1px solid rgba(58,73,75,0.3); padding-bottom: 16px;">
+                <div>
+                    <h1 class="h1" style="letter-spacing: -0.02em;">Smart Allocation Engine</h1>
+                    <p class="body-lg text-muted" style="margin-top: 8px; max-width: 640px;">Automated mapping of incoming patients to optimal hospital resources using predictive AI models.</p>
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px; background: var(--surface-container-high); padding: 8px 16px; border-radius: var(--radius-full); border: 1px solid var(--outline-variant);">
+                    <span style="width: 8px; height: 8px; border-radius: 50%; background: var(--primary-container);" class="animate-border-pulse"></span>
+                    <span class="label-caps text-cyan">System Online</span>
+                </div>
+            </div>
+
+            <!-- Flow Diagram -->
+            <section class="glass-level-1 rounded-xl p-md animate-fade-in" style="animation-delay: 0.15s; position: relative; overflow: hidden;">
+                <div class="ambient-glow" style="top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(135deg, rgba(0,242,255,0.03), transparent); border-radius: var(--radius-xl);"></div>
+
+                <h3 class="h3 mb-lg" style="position: relative; z-index: 10;">Allocation Matrix</h3>
+
+                <div class="flow-section" style="position: relative; z-index: 10;">
+                    <!-- Patients -->
+                    <div class="flow-col">
+                        <div class="patient-node glass-level-2">
+                            <div class="node-avatar"><span class="material-symbols-outlined text-muted">person</span></div>
+                            <div>
+                                <div class="label-caps">ID: PT-8492</div>
+                                <div style="font-size: 14px; color: var(--error);">Critical - Cardiac</div>
+                            </div>
+                        </div>
+                        <div class="patient-node glass-level-2">
+                            <div class="node-avatar"><span class="material-symbols-outlined text-muted">person</span></div>
+                            <div>
+                                <div class="label-caps">ID: PT-8493</div>
+                                <div style="font-size: 14px; color: var(--secondary);">Urgent - Trauma</div>
+                            </div>
+                        </div>
+                        <div class="patient-node glass-level-1" style="opacity: 0.5;">
+                            <div class="node-avatar"><span class="material-symbols-outlined text-muted">person</span></div>
+                            <div><div class="label-caps">Queue...</div></div>
+                        </div>
+                    </div>
+
+                    <!-- Left Connector -->
+                    <div class="flow-connector">
+                        <div class="flow-path"></div>
+                        <span class="material-symbols-outlined flow-arrow" style="position: absolute;">east</span>
+                    </div>
+
+                    <!-- AI Core -->
+                    <div style="display: flex; flex-direction: column; align-items: center; flex-shrink: 0;">
+                        <div class="ai-core">
+                            <span class="material-symbols-outlined" style="color: var(--primary-container); font-size: 48px; position: relative; z-index: 1;">memory</span>
+                        </div>
+                        <div class="label-caps text-cyan" style="margin-top: 16px; text-align: center;">Neural<br/>Router</div>
+                    </div>
+
+                    <!-- Right Connector -->
+                    <div class="flow-connector">
+                        <div class="flow-path"></div>
+                        <span class="material-symbols-outlined flow-arrow" style="position: absolute;">east</span>
+                    </div>
+
+                    <!-- Resources -->
+                    <div class="flow-col">
+                        <div class="resource-node glass-level-1">
+                            <div class="node-avatar"><span class="material-symbols-outlined text-cyan">bed</span></div>
+                            <div>
+                                <div class="label-caps">ICU-Ward A</div>
+                                <div style="font-size: 14px; color: var(--on-surface-variant);">Bed 04 - Ready</div>
+                            </div>
+                        </div>
+                        <div class="resource-node glass-level-1">
+                            <div class="node-avatar"><span class="material-symbols-outlined text-pink">medical_services</span></div>
+                            <div>
+                                <div class="label-caps">OR-Trauma 2</div>
+                                <div style="font-size: 14px; color: var(--on-surface-variant);">Prep Phase</div>
+                            </div>
+                        </div>
+                        <div class="resource-node glass-level-1" style="border-style: dashed; border-color: var(--outline-variant);">
+                            <div class="node-avatar" style="opacity: 0.5; border-style: dashed;"><span class="material-symbols-outlined" style="color: var(--outline);">search</span></div>
+                            <div><div class="label-caps" style="color: var(--outline);">Scanning...</div></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action -->
+                <div style="display: flex; justify-content: center; margin-top: 48px; position: relative; z-index: 10;">
+                    <button class="run-btn" id="btn-run-allocation" onclick="runSmartAllocation()">
+                        <span class="material-symbols-outlined">sync</span>
+                        Run Smart Allocation
+                    </button>
+                </div>
+            </section>
+
+            <!-- Results -->
+            <section class="animate-fade-in" style="animation-delay: 0.3s;">
+                <div class="flex justify-between items-center mb-md">
+                    <h3 class="h2">Live Results</h3>
+                    <span class="label-caps text-muted" id="results-timestamp">Loading...</span>
+                </div>
+                <div class="grid-3" id="results-grid">
+                    <div class="result-card glass-level-1" style="border-style:dashed;border-color:var(--outline-variant);text-align:center;padding:40px;">
+                        <span class="material-symbols-outlined" style="color:var(--outline);font-size:32px;animation:pulse 1.5s infinite;">sync</span>
+                        <p class="label-caps" style="color:var(--outline);margin-top:12px;">Loading allocations...</p>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="shared.js"></script>
+    <script>
+        if (!enforceAdminAccess()) throw new Error('Admin login required');
+        buildNavigation('resources');
+
+        function renderAssignedCard(allocation, index) {
+            const isOdd = index % 2 === 0;
+            const accentColor = isOdd ? 'cyan' : 'pink';
+            const glowColor = isOdd ? 'rgba(0,242,255,0.1)' : 'rgba(255,172,232,0.1)';
+            const confidenceText = allocation.ai_confidence && Number(allocation.ai_confidence) > 0
+                ? allocation.ai_confidence + '%'
+                : 'Manual';
+            const patientName = escapeHtml(allocation.patient_name || 'Unknown Patient');
+            const patientCode = escapeHtml(allocation.patient_code || 'N/A');
+            const assignedResource = escapeHtml(allocation.assigned_resource || 'Pending');
+            const resourceName = escapeHtml(allocation.resource_name || 'Manual assignment');
+            const ward = escapeHtml(allocation.ward || 'Ward pending');
+
+            return `
+                <div class="result-card glass-level-2" style="${!isOdd ? 'border-color:var(--secondary);' : ''}">
+                    <div class="card-glow" style="background:${glowColor};"></div>
+                    <div class="flex justify-between items-center" style="position:relative;z-index:1;">
+                        <div class="flex items-center gap-sm">
+                            <span class="material-symbols-outlined text-${accentColor}">check_circle</span>
+                            <span class="label-caps">Resource Assigned</span>
+                        </div>
+                        <span class="metric-badge ${accentColor}" style="font-size:10px;">Assigned</span>
+                    </div>
+                    <div class="result-mapping" style="position:relative;z-index:1;">
+                        <div>
+                            <div style="font-size:14px;color:var(--on-surface-variant);">Patient</div>
+                            <div class="h3">${patientName}</div>
+                            <div style="font-size:12px;color:var(--outline);margin-top:6px;">${patientCode}</div>
+                        </div>
+                        <span class="material-symbols-outlined" style="color:var(--outline-variant);">arrow_forward</span>
+                        <div style="text-align:right;">
+                            <div style="font-size:14px;color:var(--on-surface-variant);">Resource</div>
+                            <div class="h3 text-${accentColor}">${assignedResource}</div>
+                            <div style="font-size:12px;color:var(--outline);margin-top:6px;">${resourceName}</div>
+                        </div>
+                    </div>
+                    <div style="border-top:1px solid rgba(255,255,255,0.05);padding-top:12px;display:flex;justify-content:space-between;position:relative;z-index:1;">
+                        <span style="font-size:12px;color:var(--on-surface-variant);">${ward}</span>
+                        <span class="label-caps text-pink">${confidenceText}</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderPendingCard(patient, index) {
+            const isOdd = index % 2 === 0;
+            const accentColor = isOdd ? 'purple' : 'error';
+            const badgeClass = accentColor === 'error' ? 'error' : 'pink';
+            const patientName = escapeHtml(patient.patient_name || 'Unknown Patient');
+            const patientCode = escapeHtml(patient.patient_code || 'N/A');
+            const recommendedResource = escapeHtml(patient.recommended_resource || 'Pending review');
+            const patientStatus = escapeHtml(patient.patient_status || 'waiting');
+            const severity = escapeHtml(patient.severity || 'Unknown');
+
+            return `
+                <div class="result-card glass-level-1" style="border-style:dashed;border-color:var(--outline-variant);">
+                    <div class="flex justify-between items-center" style="position:relative;z-index:1;">
+                        <div class="flex items-center gap-sm">
+                            <span class="material-symbols-outlined text-${accentColor}">pending_actions</span>
+                            <span class="label-caps">Awaiting Assignment</span>
+                        </div>
+                        <span class="metric-badge ${badgeClass}" style="font-size:10px;">Not Assigned</span>
+                    </div>
+                    <div class="result-mapping" style="position:relative;z-index:1;">
+                        <div>
+                            <div style="font-size:14px;color:var(--on-surface-variant);">Patient</div>
+                            <div class="h3">${patientName}</div>
+                            <div style="font-size:12px;color:var(--outline);margin-top:6px;">${patientCode}</div>
+                        </div>
+                        <span class="material-symbols-outlined" style="color:var(--outline-variant);">priority_high</span>
+                        <div style="text-align:right;">
+                            <div style="font-size:14px;color:var(--on-surface-variant);">Recommended</div>
+                            <div class="h3 text-${accentColor}">${recommendedResource}</div>
+                        </div>
+                    </div>
+                    <div style="border-top:1px solid rgba(255,255,255,0.05);padding-top:12px;display:flex;justify-content:space-between;position:relative;z-index:1;">
+                        <span style="font-size:12px;color:var(--on-surface-variant);">${patientStatus}</span>
+                        <span class="label-caps text-muted">${severity}</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        async function loadAllocationResults() {
+            const grid = document.getElementById('results-grid');
+            const data = await apiFetch('get_allocations.php');
+
+            if (!data || data.status !== 'success') {
+                document.getElementById('results-timestamp').textContent = 'Unavailable';
+                grid.innerHTML = '<div class="result-card glass-level-1" style="border-style:dashed;text-align:center;padding:40px;grid-column:span 3;"><p class="text-error">Unable to load live allocation results.</p></div>';
+                return;
+            }
+
+            const allocations = Array.isArray(data.allocations) ? data.allocations : [];
+            const unassigned = Array.isArray(data.unassigned_patients) ? data.unassigned_patients : [];
+            const cards = [];
+
+            allocations.slice(0, 6).forEach((allocation, index) => {
+                cards.push(renderAssignedCard(allocation, index));
+            });
+
+            const remainingSlots = Math.max(0, 6 - cards.length);
+            unassigned.slice(0, remainingSlots).forEach((patient, index) => {
+                cards.push(renderPendingCard(patient, index));
+            });
+
+            document.getElementById('results-timestamp').textContent = 'Live - ' + new Date().toLocaleTimeString();
+
+            if (cards.length === 0) {
+                grid.innerHTML = '<div class="result-card glass-level-1" style="border-style:dashed;text-align:center;padding:40px;grid-column:span 3;"><p class="text-muted">No allocations yet. Add a patient and assign a resource to populate this dashboard.</p></div>';
+                return;
+            }
+
+            grid.innerHTML = cards.join('');
+        }
+
+        loadAllocationResults();
+        setInterval(loadAllocationResults, 15000);
+        window.addEventListener('storage', function(event) {
+            if (event.key === 'smartHospitalAllocationsUpdatedAt') {
+                loadAllocationResults();
+            }
+        });
+
+        async function runSmartAllocation() {
+            const btn = document.getElementById('btn-run-allocation');
+            btn.innerHTML = '<span class="material-symbols-outlined" style="animation:spin 1s linear infinite;">sync</span> Running AI Allocation...';
+            btn.disabled = true;
+
+            const pData = await apiFetch('get_patients.php');
+            if (!pData || !pData.patients) {
+                showToast('Failed to load patients', 'error');
+                btn.innerHTML = '<span class="material-symbols-outlined">sync</span> Run Smart Allocation';
+                btn.disabled = false;
+                return;
+            }
+
+            const waiting = pData.patients.filter(p => p.status === 'waiting');
+            let allocated = 0;
+
+            for (const p of waiting) {
+                const result = await apiFetch('allocate_resource.php', {
+                    method: 'POST',
+                    body: JSON.stringify({ patient_id: p.id }),
+                });
+
+                if (result && result.status === 'success') {
+                    allocated++;
+                }
+            }
+
+            if (allocated > 0) {
+                showToast(`Smart Allocation complete! ${allocated} patient(s) assigned.`, 'success');
+            } else {
+                showToast('All patients already allocated or no resources available.', 'info');
+            }
+
+            btn.innerHTML = '<span class="material-symbols-outlined">sync</span> Run Smart Allocation';
+            btn.disabled = false;
+
+            notifyAllocationUpdate();
+            await loadAllocationResults();
+        }
+    </script>
+</body>
+</html>

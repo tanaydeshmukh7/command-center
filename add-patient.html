@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Add Patient — Command Center</title>
+    <meta name="description" content="Register new patients with vital signs and symptoms for AI-powered triage and resource allocation." />
+    <link rel="stylesheet" href="styles.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+    <style>
+        .form-card {
+            width: 100%;
+            max-width: 800px;
+            margin: 0 auto;
+            background: rgba(32, 31, 33, 0.4);
+            backdrop-filter: blur(30px);
+            border: 1px solid rgba(58, 73, 75, 0.5);
+            border-radius: var(--radius-xl);
+            padding: var(--space-lg);
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+        }
+        .form-card .glow-accent {
+            position: absolute;
+            top: -80px;
+            right: -80px;
+            width: 200px;
+            height: 200px;
+            background: rgba(0, 242, 255, 0.12);
+            border-radius: 50%;
+            filter: blur(60px);
+            pointer-events: none;
+        }
+        .form-row {
+            display: grid;
+            gap: var(--grid-gutter);
+        }
+        .form-row.cols-2 { grid-template-columns: repeat(2, 1fr); }
+        .form-row.cols-3 { grid-template-columns: 2fr 1fr; }
+        .form-row.cols-2-small { grid-template-columns: 1fr 1fr; }
+        .gender-field {
+            position: relative;
+            padding-top: 16px;
+        }
+        .gender-field .form-select {
+            width: 100%;
+            background: transparent;
+            border: none;
+            border-bottom: 2px solid var(--outline-variant);
+            color: var(--on-surface);
+            font-family: 'Inter', sans-serif;
+            font-size: 18px;
+            padding: 8px 0;
+            outline: none;
+            appearance: none;
+            cursor: pointer;
+            transition: border-color 0.3s ease;
+        }
+        .gender-field .form-select:focus {
+            border-bottom-color: var(--primary-container);
+        }
+        .gender-field .form-select option {
+            background: var(--surface-container);
+            color: var(--on-surface);
+        }
+        .gender-field .material-symbols-outlined {
+            position: absolute;
+            right: 0;
+            top: 24px;
+            color: var(--on-surface-variant);
+            pointer-events: none;
+        }
+        .form-separator {
+            border-top: 1px solid rgba(255,255,255,0.05);
+            padding-top: var(--space-md);
+            margin-top: var(--space-md);
+        }
+        .form-actions {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: var(--space-md);
+            flex-wrap: wrap;
+        }
+        .spo2-group {
+            position: relative;
+        }
+        .spo2-group .vital-icon {
+            position: absolute;
+            right: 0;
+            top: 24px;
+            color: rgba(255, 172, 232, 0.5);
+            animation: pulse 1.5s infinite;
+        }
+        .spo2-group .form-input {
+            text-align: center;
+            font-weight: 700;
+            font-size: 20px;
+            color: var(--secondary);
+        }
+        .spo2-group .form-input:focus {
+            border-bottom-color: var(--secondary-container);
+        }
+        .spo2-group .form-input:focus ~ label { color: var(--secondary); }
+        @media (max-width: 768px) {
+            .form-row.cols-2, .form-row.cols-3, .form-row.cols-2-small { grid-template-columns: 1fr; }
+            .form-actions { flex-direction: column; }
+            .form-actions .btn { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+    <div class="main-content" id="main-content">
+        <main class="canvas" style="display: flex; align-items: center; justify-content: center; min-height: calc(100vh - 72px);">
+            <!-- Ambient Glow -->
+            <div class="ambient-glow" style="top: 0; left: 25%; width: 500px; height: 500px; background: rgba(0,242,255,0.04);"></div>
+
+            <div class="form-card animate-fade-in">
+                <div class="glow-accent"></div>
+
+                <!-- Header -->
+                <div style="border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 24px; margin-bottom: 32px;">
+                    <h2 class="h2 flex items-center gap-sm" style="color: var(--on-surface);">
+                        <span class="material-symbols-outlined" style="color: var(--primary-container); font-size: 36px; font-variation-settings: 'FILL' 1;">person_add</span>
+                        New Patient Protocol
+                    </h2>
+                    <p class="body-md text-muted" style="margin-top: 8px;">Enter vitals and symptoms for immediate system processing.</p>
+                </div>
+
+                <form id="add-patient-form">
+                    <!-- Row 1: Name + Age/Gender -->
+                    <div class="form-row cols-2 mb-lg">
+                        <div class="floating-group">
+                            <input type="text" class="form-input" id="patient_name" placeholder="Full Name" autocomplete="off" required />
+                            <label for="patient_name">Full Name</label>
+                        </div>
+                        <div class="form-row cols-2-small">
+                            <div class="floating-group">
+                                <input type="number" class="form-input" id="patient_age" placeholder="Age" min="0" max="150" required />
+                                <label for="patient_age">Age</label>
+                            </div>
+                            <div class="gender-field">
+                                <select class="form-select" id="patient_gender" required>
+                                    <option value="" disabled selected>Gender</option>
+                                    <option value="M">Male</option>
+                                    <option value="F">Female</option>
+                                    <option value="O">Other</option>
+                                </select>
+                                <span class="material-symbols-outlined">expand_more</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Row 2: Symptoms + SpO2 -->
+                    <div class="form-row cols-3 mb-lg">
+                        <div class="floating-group">
+                            <input type="text" class="form-input" id="patient_symptoms" placeholder="Primary Symptoms" />
+                            <label for="patient_symptoms">Primary Symptoms</label>
+                        </div>
+                        <div class="floating-group spo2-group">
+                            <input type="number" class="form-input" id="patient_spo2" placeholder="SpO2 %" min="0" max="100" />
+                            <label for="patient_spo2">O₂ Level (%)</label>
+                            <span class="material-symbols-outlined vital-icon" style="position: absolute; right: 0; top: 24px; color: var(--error); pointer-events: none;">vital_signs</span>
+                        </div>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="form-separator">
+                        <div class="form-actions">
+                            <button type="button" class="btn btn-secondary" id="btn-analyze-ai">
+                                <span class="material-symbols-outlined">psychology</span>
+                                Analyze with AI
+                            </button>
+                            <button type="submit" class="btn btn-primary">
+                                <span class="material-symbols-outlined">save</span>
+                                Save Patient
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </main>
+    </div>
+
+    <script src="shared.js"></script>
+    <script>
+        if (!enforceAdminAccess()) throw new Error('Admin login required');
+        buildNavigation('add-patient');
+    </script>
+</body>
+</html>

@@ -1,0 +1,1203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Monitoring — Command Center</title>
+    <meta name="description" content="Search patients, monitor live vitals, review nurse doses, and open AI-assisted recovery guidance." />
+    <link rel="stylesheet" href="styles.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+    <style>
+        .monitor-page {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-lg);
+            position: relative;
+        }
+
+        .overview-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: var(--space-md);
+        }
+
+        .overview-card,
+        .monitor-shell,
+        .monitoring-panel {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: var(--radius-xl);
+            backdrop-filter: blur(24px);
+        }
+
+        .overview-card {
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .overview-card .material-symbols-outlined {
+            color: var(--primary-container);
+            font-size: 24px;
+        }
+
+        .overview-card strong {
+            font-size: 32px;
+            line-height: 1;
+            color: var(--on-surface);
+        }
+
+        .toolbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            margin-bottom: 18px;
+        }
+
+        .search-shell {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex: 1;
+            min-width: 0;
+            padding: 12px 16px;
+            border-radius: 999px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(255, 255, 255, 0.04);
+        }
+
+        .search-shell .material-symbols-outlined {
+            color: var(--on-surface-variant);
+        }
+
+        .search-shell input {
+            flex: 1;
+            min-width: 0;
+            border: none;
+            outline: none;
+            background: transparent;
+            color: var(--on-surface);
+            font-size: 14px;
+        }
+
+        .search-shell input::placeholder {
+            color: rgba(185, 202, 203, 0.55);
+        }
+
+        .filter-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .filter-chip {
+            min-height: 38px;
+            padding: 0 14px;
+            border-radius: 999px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(255, 255, 255, 0.04);
+            color: var(--on-surface);
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .filter-chip.active {
+            border-color: rgba(0, 242, 255, 0.28);
+            color: var(--primary-container);
+            box-shadow: 0 0 18px rgba(0, 242, 255, 0.15);
+        }
+
+        .monitor-shell {
+            padding: var(--space-md);
+        }
+
+        .monitor-table {
+            width: 100%;
+            border-collapse: collapse;
+            border-spacing: 0;
+        }
+
+        .monitor-table th {
+            padding: 14px 12px;
+            text-align: left;
+            background: rgba(0, 242, 255, 0.08);
+            color: var(--primary-container);
+            border-bottom: 1px solid rgba(0, 242, 255, 0.16);
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        .monitor-table td {
+            padding: 16px 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            vertical-align: middle;
+        }
+
+        .monitor-row {
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+
+        .monitor-row:hover {
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .monitor-row.is-active {
+            background: rgba(0, 242, 255, 0.06);
+        }
+
+        .patient-cell {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .patient-avatar {
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            color: var(--primary-container);
+            flex-shrink: 0;
+        }
+
+        .patient-meta strong {
+            display: block;
+            color: var(--on-surface);
+            font-size: 16px;
+        }
+
+        .patient-meta span {
+            display: block;
+            margin-top: 4px;
+            color: var(--on-surface-variant);
+            font-size: 12px;
+        }
+
+        .severity-pill,
+        .ward-pill,
+        .mini-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 10px;
+            border-radius: 999px;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        .severity-pill.critical,
+        .mini-pill.critical {
+            background: rgba(255, 180, 171, 0.12);
+            border: 1px solid rgba(255, 180, 171, 0.2);
+            color: var(--error);
+        }
+
+        .severity-pill.moderate,
+        .mini-pill.moderate {
+            background: rgba(255, 214, 102, 0.12);
+            border: 1px solid rgba(255, 214, 102, 0.2);
+            color: #ffd666;
+        }
+
+        .severity-pill.stable,
+        .mini-pill.stable {
+            background: rgba(0, 242, 255, 0.1);
+            border: 1px solid rgba(0, 242, 255, 0.16);
+            color: var(--primary-container);
+        }
+
+        .ward-pill {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            color: var(--on-surface);
+        }
+
+        .empty-state {
+            padding: 54px 24px;
+            text-align: center;
+            color: var(--on-surface-variant);
+            border: 1px dashed rgba(255, 255, 255, 0.12);
+            border-radius: var(--radius-lg);
+        }
+
+        .backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(7, 8, 9, 0.74);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.24s ease;
+            z-index: 80;
+        }
+
+        .backdrop.is-open {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .monitoring-panel {
+            position: fixed;
+            top: 0;
+            right: 0;
+            width: min(720px, 100vw);
+            height: 100vh;
+            padding: 28px;
+            overflow-y: auto;
+            transform: translateX(100%);
+            transition: transform 0.28s ease;
+            z-index: 90;
+            box-shadow: -18px 0 40px rgba(0, 0, 0, 0.35);
+        }
+
+        .monitoring-panel.is-open {
+            transform: translateX(0);
+        }
+
+        .panel-topbar {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 16px;
+            margin-bottom: 22px;
+        }
+
+        .close-panel {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(255, 255, 255, 0.04);
+            color: var(--on-surface);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+
+        .live-alerts {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 18px 0 24px;
+        }
+
+        .panel-grid,
+        .vitals-grid,
+        .detail-grid,
+        .factor-grid {
+            display: grid;
+            gap: 16px;
+        }
+
+        .panel-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .vitals-grid {
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+        }
+
+        .detail-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .vital-card,
+        .panel-card {
+            padding: 18px;
+            border-radius: var(--radius-lg);
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.07);
+        }
+
+        .vital-card strong {
+            display: block;
+            margin-top: 10px;
+            font-size: 28px;
+            line-height: 1;
+        }
+
+        .vital-card .subtext {
+            margin-top: 8px;
+            color: var(--on-surface-variant);
+            font-size: 12px;
+        }
+
+        .panel-card h4 {
+            font-size: 16px;
+            margin-bottom: 12px;
+            color: var(--on-surface);
+        }
+
+        .profile-list,
+        .condition-list,
+        .medication-list,
+        .dose-log,
+        .factor-grid {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .profile-list li,
+        .condition-list li,
+        .medication-list li {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .profile-list li:last-child,
+        .condition-list li:last-child,
+        .medication-list li:last-child {
+            border-bottom: none;
+        }
+
+        .dose-log li {
+            padding: 14px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .dose-log li:last-child {
+            border-bottom: none;
+        }
+
+        .factor-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .factor-card {
+            padding: 14px;
+            border-radius: var(--radius-lg);
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .waveform {
+            display: grid;
+            grid-template-columns: repeat(24, minmax(0, 1fr));
+            align-items: end;
+            gap: 4px;
+            height: 84px;
+            margin-top: 16px;
+        }
+
+        .waveform span {
+            display: block;
+            border-radius: 999px;
+            background: linear-gradient(180deg, rgba(0, 242, 255, 0.95), rgba(0, 242, 255, 0.16));
+        }
+
+        .panel-card .narrative {
+            color: var(--on-surface-variant);
+            line-height: 1.8;
+        }
+
+        @media (max-width: 1240px) {
+            .overview-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+
+        @media (max-width: 980px) {
+            .toolbar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .panel-grid,
+            .detail-grid,
+            .factor-grid,
+            .vitals-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .monitor-shell {
+                overflow-x: auto;
+            }
+
+            .monitor-table {
+                min-width: 820px;
+            }
+        }
+
+        @media (max-width: 720px) {
+            .overview-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .monitoring-panel {
+                width: 100vw;
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="main-content" id="main-content">
+        <main class="canvas monitor-page">
+            <div class="ambient-glow" style="top: -20%; right: -12%; width: 760px; height: 760px; background: rgba(0, 242, 255, 0.05);"></div>
+
+            <section class="animate-fade-in">
+                <div class="flex justify-between items-center" style="gap: 18px; flex-wrap: wrap;">
+                    <div>
+                        <span class="label-caps text-cyan">Patient Telemetry</span>
+                        <h1 class="h1" style="margin-top: 10px;">Monitoring Center</h1>
+                        <p class="body-lg text-muted" style="margin-top: 8px; max-width: 760px;">Search any patient, open the live monitoring window, and review vitals, nurse dose rounds, diseases, assigned medicines, and AI recovery guidance in one place.</p>
+                    </div>
+                    <div class="severity-pill stable">
+                        <span class="material-symbols-outlined" style="font-size: 14px;">monitor_heart</span>
+                        Live ward stream
+                    </div>
+                </div>
+            </section>
+
+            <section class="overview-grid animate-fade-in" style="animation-delay: 0.1s;">
+                <article class="overview-card">
+                    <span class="material-symbols-outlined">groups</span>
+                    <strong id="summary-total">0</strong>
+                    <span class="text-muted">Patients on current roster</span>
+                </article>
+                <article class="overview-card">
+                    <span class="material-symbols-outlined">warning</span>
+                    <strong id="summary-critical">0</strong>
+                    <span class="text-muted">Critical watch cases</span>
+                </article>
+                <article class="overview-card">
+                    <span class="material-symbols-outlined">air</span>
+                    <strong id="summary-oxygen">0</strong>
+                    <span class="text-muted">Low oxygen or assisted support</span>
+                </article>
+                <article class="overview-card">
+                    <span class="material-symbols-outlined">bed</span>
+                    <strong id="summary-assigned">0</strong>
+                    <span class="text-muted">Patients with assigned resources</span>
+                </article>
+            </section>
+
+            <section class="monitor-shell animate-fade-in" style="animation-delay: 0.16s;">
+                <div class="toolbar">
+                    <label class="search-shell" for="patient-search">
+                        <span class="material-symbols-outlined">search</span>
+                        <input id="patient-search" type="text" placeholder="Search by name, patient code, disease, ward, or resource..." />
+                    </label>
+                    <div class="filter-row">
+                        <button class="filter-chip active" data-filter="all">All patients</button>
+                        <button class="filter-chip" data-filter="critical">Critical</button>
+                        <button class="filter-chip" data-filter="moderate">Moderate</button>
+                        <button class="filter-chip" data-filter="assigned">Assigned</button>
+                    </div>
+                </div>
+
+                <div id="monitor-table-container">
+                    <div class="empty-state">
+                        <span class="material-symbols-outlined" style="font-size: 32px; display: block; margin-bottom: 10px;">sync</span>
+                        Loading patient monitoring list...
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <div id="monitoring-backdrop" class="backdrop"></div>
+    <aside id="monitoring-panel" class="monitoring-panel" aria-hidden="true">
+        <div id="monitoring-panel-content">
+            <div class="empty-state" style="padding: 72px 24px;">
+                <span class="material-symbols-outlined" style="font-size: 36px; display: block; margin-bottom: 12px;">monitor_heart</span>
+                Choose a patient from the list to open the monitoring window.
+            </div>
+        </div>
+    </aside>
+
+    <script src="shared.js"></script>
+    <script>
+        if (!enforceAdminAccess()) throw new Error('Admin login required');
+        const NURSE_NAMES = ['Nurse A. Singh', 'Nurse R. Iyer', 'Nurse M. Khan', 'Nurse S. Roy'];
+        const FILTERS = ['all', 'critical', 'moderate', 'assigned'];
+
+        let allPatients = [];
+        let activeFilter = 'all';
+        let activeQuery = '';
+        let activePatientId = null;
+        let activeMonitorTimer = null;
+        let activeMonitorState = null;
+        let monitorRequestToken = 0;
+
+        buildNavigation('patient-list');
+        bindMonitoringEvents();
+        loadPatients();
+        setInterval(() => loadPatients(true), 25000);
+
+        function bindMonitoringEvents() {
+            document.getElementById('patient-search').addEventListener('input', (event) => {
+                activeQuery = event.target.value.trim().toLowerCase();
+                renderPatientTable();
+            });
+
+            document.querySelectorAll('.filter-chip').forEach((button) => {
+                button.addEventListener('click', () => {
+                    activeFilter = button.dataset.filter || 'all';
+                    document.querySelectorAll('.filter-chip').forEach((chip) => chip.classList.remove('active'));
+                    button.classList.add('active');
+                    renderPatientTable();
+                });
+            });
+
+            document.getElementById('monitoring-backdrop').addEventListener('click', closeMonitoringPanel);
+        }
+
+        async function loadPatients(silent = false) {
+            const data = await apiFetch('get_patients.php');
+            if (!data || !Array.isArray(data.patients)) {
+                if (!silent) {
+                    showToast(data?.message || 'Failed to load patients', 'error');
+                }
+                return;
+            }
+
+            allPatients = data.patients;
+            updateOverviewCards();
+            renderPatientTable();
+        }
+
+        function updateOverviewCards() {
+            const criticalCount = allPatients.filter((patient) => normalizeSeverity(patient) === 'critical').length;
+            const oxygenCount = allPatients.filter((patient) => getBaseVitals(patient).spo2 <= 92).length;
+            const assignedCount = allPatients.filter((patient) => Boolean(patient.assigned_resource)).length;
+
+            document.getElementById('summary-total').textContent = String(allPatients.length);
+            document.getElementById('summary-critical').textContent = String(criticalCount);
+            document.getElementById('summary-oxygen').textContent = String(oxygenCount);
+            document.getElementById('summary-assigned').textContent = String(assignedCount);
+        }
+
+        function normalizeSeverity(patient) {
+            const value = String(patient?.severity || '').toLowerCase();
+            if (value === 'critical' || value === 'high') {
+                return 'critical';
+            }
+            if (value === 'moderate') {
+                return 'moderate';
+            }
+            return 'stable';
+        }
+
+        function getSeverityMeta(patient) {
+            const severity = normalizeSeverity(patient);
+            if (severity === 'critical') {
+                return { key: 'critical', label: 'Critical', icon: 'warning' };
+            }
+            if (severity === 'moderate') {
+                return { key: 'moderate', label: 'Moderate', icon: 'siren' };
+            }
+            return { key: 'stable', label: 'Stable', icon: 'check_circle' };
+        }
+
+        function getBaseVitals(patient) {
+            const severity = normalizeSeverity(patient);
+            const seed = Number(patient?.id || 1);
+            const providedSpo2 = Number(patient?.oxygen_level || 0);
+            const spo2 = providedSpo2 > 0 ? providedSpo2 : (severity === 'critical' ? 88 : severity === 'moderate' ? 94 : 98);
+            const heartRate = severity === 'critical' ? 116 + (seed % 6) : severity === 'moderate' ? 96 + (seed % 5) : 76 + (seed % 4);
+            const respiratoryRate = severity === 'critical' ? 28 : severity === 'moderate' ? 22 : 16;
+            const temperature = symptomIncludes(patient, ['fever', 'infection']) ? 100.9 : (severity === 'critical' ? 99.4 : 98.4);
+            const systolic = severity === 'critical' ? 94 + (seed % 5) : severity === 'moderate' ? 108 + (seed % 6) : 118 + (seed % 5);
+            const diastolic = severity === 'critical' ? 58 + (seed % 4) : severity === 'moderate' ? 68 + (seed % 4) : 76 + (seed % 3);
+
+            return {
+                spo2,
+                heartRate,
+                respiratoryRate,
+                temperature,
+                bloodPressure: `${systolic}/${diastolic}`,
+            };
+        }
+
+        function symptomIncludes(patient, keywords) {
+            const symptoms = String(patient?.symptoms || '').toLowerCase();
+            return keywords.some((keyword) => symptoms.includes(keyword));
+        }
+
+        function getPatientDisplayResource(patient) {
+            return patient.assigned_resource || patient.resource_name || patient.allocation || 'Awaiting assignment';
+        }
+
+        function getPatientWard(patient) {
+            return patient.resource_ward || patient.ward || 'Observation Ward';
+        }
+
+        function getFilteredPatients() {
+            return allPatients.filter((patient) => {
+                const severity = normalizeSeverity(patient);
+                const haystack = [
+                    patient.name,
+                    patient.patient_code,
+                    patient.symptoms,
+                    patient.assigned_resource,
+                    patient.allocation,
+                    patient.ward,
+                    patient.status,
+                ].join(' ').toLowerCase();
+
+                const matchesQuery = !activeQuery || haystack.includes(activeQuery);
+                if (!matchesQuery) {
+                    return false;
+                }
+
+                if (activeFilter === 'critical') {
+                    return severity === 'critical';
+                }
+                if (activeFilter === 'moderate') {
+                    return severity === 'moderate';
+                }
+                if (activeFilter === 'assigned') {
+                    return Boolean(patient.assigned_resource);
+                }
+
+                return true;
+            });
+        }
+
+        function renderPatientTable() {
+            const patients = getFilteredPatients();
+            const container = document.getElementById('monitor-table-container');
+
+            if (!patients.length) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <span class="material-symbols-outlined" style="font-size: 32px; display: block; margin-bottom: 10px;">search_off</span>
+                        No patients match the current search and filter.
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = `
+                <table class="monitor-table">
+                    <thead>
+                        <tr>
+                            <th>Patient</th>
+                            <th>Severity</th>
+                            <th>Live Snapshot</th>
+                            <th>Assigned Resource</th>
+                            <th>Ward</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${patients.map((patient) => renderPatientRow(patient)).join('')}
+                    </tbody>
+                </table>
+            `;
+
+            container.querySelectorAll('.monitor-row').forEach((row) => {
+                row.addEventListener('click', () => {
+                    openMonitoringPanel(Number(row.dataset.patientId));
+                });
+            });
+        }
+
+        function renderPatientRow(patient) {
+            const severity = getSeverityMeta(patient);
+            const vitals = getBaseVitals(patient);
+            const isActive = Number(patient.id) === activePatientId;
+
+            return `
+                <tr class="monitor-row ${isActive ? 'is-active' : ''}" data-patient-id="${patient.id}">
+                    <td>
+                        <div class="patient-cell">
+                            <div class="patient-avatar">
+                                <span class="material-symbols-outlined">person</span>
+                            </div>
+                            <div class="patient-meta">
+                                <strong>${escapeHtml(patient.name)}</strong>
+                                <span>${escapeHtml(patient.patient_code || `PT-${patient.id}`)} | Age ${escapeHtml(patient.age)}</span>
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        <span class="severity-pill ${severity.key}">
+                            <span class="material-symbols-outlined" style="font-size: 14px;">${severity.icon}</span>
+                            ${severity.label}
+                        </span>
+                    </td>
+                    <td>
+                        <div style="display: flex; flex-direction: column; gap: 6px;">
+                            <span class="mini-pill ${severity.key}">HR ${vitals.heartRate} BPM</span>
+                            <span class="mini-pill ${vitals.spo2 <= 92 ? 'critical' : vitals.spo2 <= 95 ? 'moderate' : 'stable'}">O2 ${vitals.spo2}%</span>
+                        </div>
+                    </td>
+                    <td>${escapeHtml(getPatientDisplayResource(patient))}</td>
+                    <td><span class="ward-pill">${escapeHtml(getPatientWard(patient))}</span></td>
+                </tr>
+            `;
+        }
+
+        async function openMonitoringPanel(patientId) {
+            const selectedPatient = allPatients.find((patient) => Number(patient.id) === Number(patientId));
+            if (!selectedPatient) {
+                return;
+            }
+
+            activePatientId = patientId;
+            renderPatientTable();
+            clearMonitorTimer();
+
+            const backdrop = document.getElementById('monitoring-backdrop');
+            const panel = document.getElementById('monitoring-panel');
+            const content = document.getElementById('monitoring-panel-content');
+
+            backdrop.classList.add('is-open');
+            panel.classList.add('is-open');
+            panel.setAttribute('aria-hidden', 'false');
+            document.body.style.overflow = 'hidden';
+
+            content.innerHTML = `
+                <div class="empty-state" style="padding: 72px 24px;">
+                    <span class="material-symbols-outlined" style="font-size: 36px; display: block; margin-bottom: 12px; animation: spin 1s linear infinite;">sync</span>
+                    Loading live monitoring data for ${escapeHtml(selectedPatient.name)}...
+                </div>
+            `;
+
+            const token = ++monitorRequestToken;
+            const analysisPayload = {
+                name: selectedPatient.name,
+                age: selectedPatient.age,
+                gender: selectedPatient.gender,
+                symptoms: selectedPatient.symptoms || 'No symptoms recorded',
+                oxygen_level: selectedPatient.oxygen_level || '',
+                allocation: selectedPatient.allocation || '',
+            };
+
+            const [patientResult, aiResult, narrativeResult] = await Promise.all([
+                apiFetch(`get_patient.php?id=${patientId}`),
+                apiFetch(`ai_analyze.php?patient_id=${patientId}`),
+                analyzePatient(analysisPayload),
+            ]);
+
+            if (token !== monitorRequestToken) {
+                return;
+            }
+
+            const mergedPatient = {
+                ...selectedPatient,
+                ...(patientResult?.patient || {}),
+            };
+
+            const profile = buildMonitoringProfile(mergedPatient, aiResult, narrativeResult);
+            activeMonitorState = profile;
+            renderMonitoringProfile(profile);
+            startMonitorTimer();
+        }
+
+        function closeMonitoringPanel() {
+            activePatientId = null;
+            clearMonitorTimer();
+            document.getElementById('monitoring-backdrop').classList.remove('is-open');
+            document.getElementById('monitoring-panel').classList.remove('is-open');
+            document.getElementById('monitoring-panel').setAttribute('aria-hidden', 'true');
+            document.body.style.overflow = '';
+            renderPatientTable();
+        }
+
+        function buildMonitoringProfile(patient, aiResult, narrativeResult) {
+            const baseVitals = getBaseVitals(patient);
+            const severity = getSeverityMeta(patient);
+            const conditions = inferConditions(patient);
+            const medications = inferMedications(patient, severity.key);
+            const doseLog = buildDoseLog(patient, medications);
+            const prognosis = predictRecovery(patient, aiResult?.analysis);
+            const factors = Array.isArray(aiResult?.explanation?.factors) ? aiResult.explanation.factors : [];
+            const aiNarrative = narrativeResult?.explanation || aiResult?.explanation?.summary || 'AI narrative is not available for this patient yet.';
+            const alertTags = buildAlertTags(patient, baseVitals, severity.key);
+            const liveVitals = createLiveVitals(patient, baseVitals);
+
+            return {
+                patient,
+                severity,
+                baseVitals,
+                liveVitals,
+                conditions,
+                medications,
+                doseLog,
+                prognosis,
+                factors,
+                aiNarrative,
+                aiSummary: aiResult?.explanation?.summary || 'Allocation summary not available.',
+                recommendedResource: aiResult?.analysis?.recommended_resource || patient.allocation || patient.assigned_resource || 'General Bed',
+                aiConfidence: aiResult?.analysis?.confidence || 92,
+                severityScore: aiResult?.analysis?.severity_score || (severity.key === 'critical' ? 9 : severity.key === 'moderate' ? 6 : 3),
+                alertTags,
+                lastUpdated: new Date(),
+            };
+        }
+
+        function inferConditions(patient) {
+            const symptoms = String(patient.symptoms || '').toLowerCase();
+            const conditions = [];
+
+            if (symptoms.includes('chest') || symptoms.includes('cardiac') || symptoms.includes('arrhythm')) {
+                conditions.push('Cardiac instability under telemetry review');
+            }
+            if (symptoms.includes('cough') || symptoms.includes('breath') || symptoms.includes('oxygen') || symptoms.includes('respir')) {
+                conditions.push('Respiratory compromise and oxygenation watch');
+            }
+            if (symptoms.includes('fever') || symptoms.includes('infection')) {
+                conditions.push('Possible infectious process with fever monitoring');
+            }
+            if (symptoms.includes('trauma') || symptoms.includes('fracture') || symptoms.includes('injury')) {
+                conditions.push('Trauma recovery and pain management');
+            }
+            if (symptoms.includes('surgery') || symptoms.includes('post-op') || symptoms.includes('post operative')) {
+                conditions.push('Post-operative observation pathway');
+            }
+
+            if (!conditions.length) {
+                conditions.push('Active inpatient observation for mixed symptoms');
+            }
+
+            return conditions.slice(0, 3);
+        }
+
+        function inferMedications(patient, severityKey) {
+            const symptoms = String(patient.symptoms || '').toLowerCase();
+            const medicines = [];
+
+            if (symptoms.includes('cough') || symptoms.includes('breath') || symptoms.includes('respir')) {
+                medicines.push('Oxygen therapy support');
+                medicines.push('Nebulizer respiratory pathway');
+            }
+            if (symptoms.includes('fever') || symptoms.includes('infection')) {
+                medicines.push('Antibiotic review round');
+                medicines.push('Antipyretic support');
+            }
+            if (symptoms.includes('chest') || symptoms.includes('cardiac')) {
+                medicines.push('Cardiac monitoring protocol');
+                medicines.push('Anticoagulant review');
+            }
+            if (symptoms.includes('pain') || symptoms.includes('trauma') || symptoms.includes('surgery')) {
+                medicines.push('Pain management support');
+            }
+
+            medicines.push('IV fluid maintenance');
+
+            if (severityKey === 'critical') {
+                medicines.push('Critical care escalation pack');
+            }
+
+            return [...new Set(medicines)].slice(0, 5);
+        }
+
+        function buildDoseLog(patient, medications) {
+            const now = new Date();
+            const entries = [];
+
+            for (let index = 0; index < 4; index += 1) {
+                const minutesAgo = 180 - (index * 42) + (Number(patient.id) % 9);
+                const loggedAt = new Date(now.getTime() - minutesAgo * 60000);
+                entries.push({
+                    time: formatTime(loggedAt),
+                    nurse: NURSE_NAMES[(Number(patient.id) + index) % NURSE_NAMES.length],
+                    medicine: medications[index % medications.length],
+                    note: index === 3 ? 'Round currently under review in monitoring station.' : 'Completed nurse administration and patient response logged.',
+                });
+            }
+
+            return entries;
+        }
+
+        function predictRecovery(patient, analysis) {
+            const severity = normalizeSeverity(patient);
+            const age = Number(patient.age || 0);
+            const spo2 = getBaseVitals(patient).spo2;
+            let eta = '24-48 hours';
+            let confidence = 88;
+
+            if (severity === 'critical') {
+                eta = spo2 <= 88 ? '5-8 days' : '3-5 days';
+                confidence = 82;
+            } else if (severity === 'moderate') {
+                eta = age >= 60 ? '3-4 days' : '2-3 days';
+                confidence = 86;
+            }
+
+            if (analysis && Number(analysis.severity_score || 0) >= 8) {
+                eta = '4-7 days';
+            }
+
+            const summary = severity === 'critical'
+                ? 'Close observation is still required before stepping down from high-acuity care.'
+                : severity === 'moderate'
+                    ? 'Recovery is trending in the right direction with continued monitoring and medication rounds.'
+                    : 'Current telemetry suggests a stable recovery trajectory if vitals remain steady.';
+
+            return { eta, confidence, summary };
+        }
+
+        function buildAlertTags(patient, vitals, severityKey) {
+            const tags = [];
+
+            if (severityKey === 'critical') {
+                tags.push({ label: 'Critical watch', tone: 'critical', icon: 'warning' });
+            }
+            if (vitals.spo2 <= 92) {
+                tags.push({ label: 'Low O2', tone: 'critical', icon: 'air' });
+            }
+            if (!patient.assigned_resource) {
+                tags.push({ label: 'No fixed bed', tone: 'moderate', icon: 'bed' });
+            }
+            if (patient.assigned_resource) {
+                tags.push({ label: 'Resource linked', tone: 'stable', icon: 'check_circle' });
+            }
+
+            return tags;
+        }
+
+        function createLiveVitals(patient, baseVitals) {
+            return {
+                tick: 0,
+                seed: Number(patient.id || 1),
+                heartRate: baseVitals.heartRate,
+                spo2: baseVitals.spo2,
+                respiratoryRate: baseVitals.respiratoryRate,
+                temperature: baseVitals.temperature,
+                bloodPressure: baseVitals.bloodPressure,
+                waveform: createWaveformHeights(Number(patient.id || 1), baseVitals.heartRate),
+            };
+        }
+
+        function createWaveformHeights(seed, heartRate) {
+            return Array.from({ length: 24 }, (_, index) => {
+                const swing = Math.sin((index + seed) / 2) * 18;
+                const pulse = index % 6 === 0 ? 34 : 14;
+                return Math.max(10, Math.min(74, Math.round((heartRate / 2.6) + swing + pulse)));
+            });
+        }
+
+        function advanceLiveVitals() {
+            if (!activeMonitorState) {
+                return;
+            }
+
+            const state = activeMonitorState.liveVitals;
+            state.tick += 1;
+            const drift = Math.sin((state.tick + state.seed) / 2.5);
+            state.heartRate = clamp(Math.round(activeMonitorState.baseVitals.heartRate + drift * 3), 58, 148);
+            state.spo2 = clamp(Math.round(activeMonitorState.baseVitals.spo2 + Math.cos((state.tick + state.seed) / 3.2)), 78, 100);
+            state.respiratoryRate = clamp(Math.round(activeMonitorState.baseVitals.respiratoryRate + Math.sin((state.tick + state.seed) / 3.8)), 12, 34);
+            state.temperature = (activeMonitorState.baseVitals.temperature + (Math.sin((state.tick + state.seed) / 4.6) * 0.2)).toFixed(1);
+
+            const basePressure = activeMonitorState.baseVitals.bloodPressure.split('/').map((value) => Number(value));
+            const systolic = clamp(basePressure[0] + Math.round(drift * 2), 88, 148);
+            const diastolic = clamp(basePressure[1] + Math.round(Math.cos((state.tick + state.seed) / 3.1)), 52, 92);
+            state.bloodPressure = `${systolic}/${diastolic}`;
+            state.waveform = createWaveformHeights(state.seed + state.tick, state.heartRate);
+            activeMonitorState.lastUpdated = new Date();
+
+            updateLiveVitalDom();
+        }
+
+        function renderMonitoringProfile(profile) {
+            const patient = profile.patient;
+            const content = document.getElementById('monitoring-panel-content');
+            const conditionsMarkup = profile.conditions.map((condition) => `<li><span>${escapeHtml(condition)}</span><span class="text-muted">Active</span></li>`).join('');
+            const medicationsMarkup = profile.medications.map((medicine) => `<li><span>${escapeHtml(medicine)}</span><span class="text-muted">Allocated</span></li>`).join('');
+            const doseMarkup = profile.doseLog.map((entry) => `
+                <li>
+                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+                        <strong>${escapeHtml(entry.time)}</strong>
+                        <span class="text-muted">${escapeHtml(entry.nurse)}</span>
+                    </div>
+                    <div style="margin-top: 6px; color: var(--on-surface);">${escapeHtml(entry.medicine)}</div>
+                    <div style="margin-top: 4px; color: var(--on-surface-variant); font-size: 13px;">${escapeHtml(entry.note)}</div>
+                </li>
+            `).join('');
+            const factorsMarkup = profile.factors.length
+                ? profile.factors.map((factor) => `
+                    <div class="factor-card">
+                        <div class="label-caps text-cyan">${escapeHtml(factor.title || 'AI Factor')}</div>
+                        <p style="margin-top: 8px; color: var(--on-surface-variant); line-height: 1.7;">${escapeHtml(factor.detail || 'Monitoring factor recorded.')}</p>
+                    </div>
+                `).join('')
+                : '<div class="factor-card"><div class="label-caps text-cyan">AI Factor</div><p style="margin-top: 8px; color: var(--on-surface-variant); line-height: 1.7;">No stored rationale markers were found for this patient, so live narrative guidance is being used.</p></div>';
+            const alertsMarkup = profile.alertTags.map((tag) => `
+                <span class="mini-pill ${tag.tone}">
+                    <span class="material-symbols-outlined" style="font-size: 14px;">${tag.icon}</span>
+                    ${escapeHtml(tag.label)}
+                </span>
+            `).join('');
+
+            content.innerHTML = `
+                <div class="panel-topbar">
+                    <div>
+                        <span class="label-caps text-cyan">Patient Monitoring Window</span>
+                        <h2 class="h2" style="margin-top: 10px;">${escapeHtml(patient.name)}</h2>
+                        <p class="body-md text-muted" style="margin-top: 8px;">${escapeHtml(patient.patient_code || `PT-${patient.id}`)} | ${escapeHtml(getPatientWard(patient))} | Assigned: ${escapeHtml(getPatientDisplayResource(patient))}</p>
+                    </div>
+                    <button class="close-panel" id="close-monitoring-panel" aria-label="Close monitoring panel">
+                        <span class="material-symbols-outlined">close</span>
+                    </button>
+                </div>
+
+                <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                    <span class="severity-pill ${profile.severity.key}">
+                        <span class="material-symbols-outlined" style="font-size: 14px;">${profile.severity.icon}</span>
+                        ${profile.severity.label}
+                    </span>
+                    <span class="ward-pill">${escapeHtml(patient.gender || 'Unknown')}</span>
+                    <span class="ward-pill">Age ${escapeHtml(patient.age)}</span>
+                    <span class="ward-pill">Status ${escapeHtml(String(patient.status || 'admitted').toUpperCase())}</span>
+                </div>
+
+                <div class="live-alerts">${alertsMarkup}</div>
+
+                <div class="vitals-grid">
+                    <article class="vital-card">
+                        <span class="label-caps text-cyan">Heart Rate</span>
+                        <strong id="live-heart-rate">${profile.liveVitals.heartRate} BPM</strong>
+                        <div class="subtext">Continuous bedside monitor</div>
+                    </article>
+                    <article class="vital-card">
+                        <span class="label-caps text-cyan">O2 Level</span>
+                        <strong id="live-spo2">${profile.liveVitals.spo2}%</strong>
+                        <div class="subtext">SpO2 saturation stream</div>
+                    </article>
+                    <article class="vital-card">
+                        <span class="label-caps text-cyan">Respiration</span>
+                        <strong id="live-resp">${profile.liveVitals.respiratoryRate} /min</strong>
+                        <div class="subtext">Respiratory rate trend</div>
+                    </article>
+                    <article class="vital-card">
+                        <span class="label-caps text-cyan">Blood Pressure</span>
+                        <strong id="live-bp">${profile.liveVitals.bloodPressure}</strong>
+                        <div class="subtext">Auto cuff and telemetry estimate</div>
+                    </article>
+                </div>
+
+                <article class="panel-card" style="margin-top: 16px;">
+                    <div class="flex justify-between items-center" style="gap: 12px; flex-wrap: wrap;">
+                        <h4>Live Vital Waveform</h4>
+                        <span id="live-updated-at" class="text-muted" style="font-size: 12px;">Updated ${formatTime(profile.lastUpdated)}</span>
+                    </div>
+                    <div class="waveform" id="live-waveform">
+                        ${profile.liveVitals.waveform.map((height) => `<span style="height: ${height}px;"></span>`).join('')}
+                    </div>
+                </article>
+
+                <div class="panel-grid" style="margin-top: 16px;">
+                    <article class="panel-card">
+                        <h4>Patient Snapshot</h4>
+                        <ul class="profile-list">
+                            <li><span>Ward</span><strong>${escapeHtml(getPatientWard(patient))}</strong></li>
+                            <li><span>Assigned Resource</span><strong>${escapeHtml(getPatientDisplayResource(patient))}</strong></li>
+                            <li><span>Recorded Symptoms</span><strong>${escapeHtml(patient.symptoms || 'No symptoms recorded')}</strong></li>
+                            <li><span>Latest Allocation Time</span><strong>${escapeHtml(patient.allocation_time || 'Awaiting update')}</strong></li>
+                        </ul>
+                    </article>
+                    <article class="panel-card">
+                        <h4>Diseases And Active Concerns</h4>
+                        <ul class="condition-list">${conditionsMarkup}</ul>
+                    </article>
+                </div>
+
+                <div class="detail-grid" style="margin-top: 16px;">
+                    <article class="panel-card">
+                        <h4>Assigned Medicine</h4>
+                        <ul class="medication-list">${medicationsMarkup}</ul>
+                    </article>
+                    <article class="panel-card">
+                        <h4>Nurse Dose Rounds</h4>
+                        <ul class="dose-log">${doseMarkup}</ul>
+                    </article>
+                </div>
+
+                <div class="detail-grid" style="margin-top: 16px;">
+                    <article class="panel-card">
+                        <h4>AI Recovery Prediction</h4>
+                        <ul class="profile-list">
+                            <li><span>Severity Score</span><strong>${escapeHtml(String(profile.severityScore))} / 10</strong></li>
+                            <li><span>AI Confidence</span><strong>${escapeHtml(String(profile.aiConfidence))}%</strong></li>
+                            <li><span>Predicted Recovery Time</span><strong>${escapeHtml(profile.prognosis.eta)}</strong></li>
+                            <li><span>Recommended Resource</span><strong>${escapeHtml(profile.recommendedResource)}</strong></li>
+                        </ul>
+                        <p class="body-md text-muted" style="margin-top: 12px;">${escapeHtml(profile.prognosis.summary)}</p>
+                    </article>
+                    <article class="panel-card">
+                        <h4>AI Analysis</h4>
+                        <div class="narrative">${formatAiExplanationHtml(profile.aiNarrative)}</div>
+                        <p class="body-md text-muted" style="margin-top: 14px;">${escapeHtml(profile.aiSummary)}</p>
+                    </article>
+                </div>
+
+                <article class="panel-card" style="margin-top: 16px;">
+                    <h4>AI Rationale Factors</h4>
+                    <div class="factor-grid">${factorsMarkup}</div>
+                </article>
+            `;
+
+            document.getElementById('close-monitoring-panel').addEventListener('click', closeMonitoringPanel);
+        }
+
+        function updateLiveVitalDom() {
+            if (!activeMonitorState) {
+                return;
+            }
+
+            const vitals = activeMonitorState.liveVitals;
+            const heart = document.getElementById('live-heart-rate');
+            const spo2 = document.getElementById('live-spo2');
+            const resp = document.getElementById('live-resp');
+            const bp = document.getElementById('live-bp');
+            const updatedAt = document.getElementById('live-updated-at');
+            const waveform = document.getElementById('live-waveform');
+
+            if (!heart || !spo2 || !resp || !bp || !updatedAt || !waveform) {
+                return;
+            }
+
+            heart.textContent = `${vitals.heartRate} BPM`;
+            spo2.textContent = `${vitals.spo2}%`;
+            resp.textContent = `${vitals.respiratoryRate} /min`;
+            bp.textContent = vitals.bloodPressure;
+            updatedAt.textContent = `Updated ${formatTime(activeMonitorState.lastUpdated)}`;
+            waveform.innerHTML = vitals.waveform.map((height) => `<span style="height: ${height}px;"></span>`).join('');
+        }
+
+        function startMonitorTimer() {
+            clearMonitorTimer();
+            activeMonitorTimer = window.setInterval(advanceLiveVitals, 2200);
+        }
+
+        function clearMonitorTimer() {
+            if (activeMonitorTimer) {
+                window.clearInterval(activeMonitorTimer);
+                activeMonitorTimer = null;
+            }
+        }
+
+        function clamp(value, min, max) {
+            return Math.min(max, Math.max(min, value));
+        }
+
+        function formatTime(dateInput) {
+            const date = dateInput instanceof Date ? dateInput : new Date(dateInput);
+            return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        }
+    </script>
+</body>
+</html>
