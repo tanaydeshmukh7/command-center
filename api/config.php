@@ -7,11 +7,11 @@ header("Access-Control-Allow-Headers: Content-Type");
  * Fill in your MySQL password below.
  */
 
-define('DB_HOST', '127.0.0.1');
-define('DB_PORT', '3306');
-define('DB_NAME', 'smart_hospital');
+define('DB_HOST', 'switchback.proxy.rlwy.net');
+define('DB_PORT', '17930');
+define('DB_NAME', 'railway');
 define('DB_USER', 'root');
-define('DB_PASS', 'INTLECOREI9tanay');  // <-- Fill your MySQL root password here
+define('DB_PASS', 'iCkgHZFkTCLuVEbrIXkFuzCZzgthOGZp');  // <-- Fill your MySQL root password here
 define('ADMIN_SESSION_TTL_SECONDS', 43200);
 define('DEFAULT_ADMIN_EMAIL', 'admin@test');
 define('DEFAULT_ADMIN_DISPLAY_NAME', 'Command Center Admin');
