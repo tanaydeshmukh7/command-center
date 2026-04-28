@@ -2,7 +2,7 @@
    COMMAND CENTER — Shared Navigation Component
    ============================================ */
 
-const API_BASE = 'https://localhost:8000/api';
+const API_BASE = 'https://command-center-1-sftz.onrender.com/api';
 const HOSPITAL_PROFILE_KEY = 'smartHospitalProfile';
 const ADMIN_SESSION_KEY = 'smartHospitalAdminSession';
 const DEFAULT_HOSPITAL_NAME = 'COMMAND CENTER';
